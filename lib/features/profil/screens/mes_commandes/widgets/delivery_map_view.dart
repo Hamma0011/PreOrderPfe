@@ -346,8 +346,8 @@ class _DeliveryMapViewState extends State<DeliveryMapView> {
         }
       }
 
-      final clientLat = _currentClientPosition!.latitude;
-      final clientLng = _currentClientPosition!.longitude;
+      final clientLat = _currentClientPosition?.latitude ?? 0.0;
+      final clientLng = _currentClientPosition?.longitude ?? 0.0;
       final restoLat = etablissement.latitude ?? 0.0;
       final restoLng = etablissement.longitude ?? 0.0;
 
@@ -710,8 +710,8 @@ class _DeliveryMapViewState extends State<DeliveryMapView> {
                       _etablissement?.longitude != 0.0)
                     Marker(
                       point: LatLng(
-                        _etablissement!.latitude!,
-                        _etablissement!.longitude!,
+                        _etablissement?.latitude ?? 0.0,
+                        _etablissement?.longitude ?? 0.0,
                       ),
                       width: isMobile ? 50 : 60,
                       height: isMobile ? 50 : 60,
@@ -722,20 +722,22 @@ class _DeliveryMapViewState extends State<DeliveryMapView> {
                   if (_currentClientPosition != null)
                     Marker(
                       point: LatLng(
-                        _currentClientPosition!.latitude,
-                        _currentClientPosition!.longitude,
+                        _currentClientPosition?.latitude ?? 0.0,
+                        _currentClientPosition?.longitude ?? 0.0,
                       ),
                       width: isMobile ? 50 : 60,
                       height: isMobile ? 50 : 60,
                       child: Icon(Icons.home,
                           color: Colors.blue, size: isMobile ? 30 : 36),
                     )
-                  else if (widget.order.address?.latitude != 0.0 &&
+                  else if (widget.order.address?.latitude != null &&
+                      widget.order.address?.latitude != 0.0 &&
+                      widget.order.address?.longitude != null &&
                       widget.order.address?.longitude != 0.0)
                     Marker(
                       point: LatLng(
-                        widget.order.address!.latitude!,
-                        widget.order.address!.longitude!,
+                        widget.order.address?.latitude ?? 0.0,
+                        widget.order.address?.longitude ?? 0.0,
                       ),
                       width: isMobile ? 50 : 60,
                       height: isMobile ? 50 : 60,

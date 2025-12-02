@@ -464,8 +464,15 @@ class BannerController extends GetxController {
         return;
       }
 
+      // Récupérer la bannière pour obtenir les informations nécessaires
+      final banner = allBanners.firstWhere((b) => b.id == bannerId);
+      
       isLoading.value = true;
       await _bannerRepository.updateBannerStatus(bannerId, newStatus);
+      
+      // Notifier le gérant du changement de statut
+      await _notifyGerantStatusChange(banner, newStatus);
+      
       // Ne pas recharger toutes les bannières, le Realtime s'en chargera
       // Cela évite les conflits et permet une mise à jour plus fluide
       // await fetchAllBanners();
@@ -802,6 +809,66 @@ class BannerController extends GetxController {
   /// Vérifier si une bannière a des modifications en attente
   bool hasPendingChanges(BannerModel banner) {
     return banner.pendingChanges != null && banner.pendingChanges!.isNotEmpty;
+  }
+
+  /// Notifier le gérant lorsqu'un admin change le statut de sa bannière
+  Future<void> _notifyGerantStatusChange(
+      BannerModel banner, String newStatus) async {
+    try {
+      // Vérifier si la bannière est liée à un établissement
+      if (banner.linkType != 'establishment' ||
+          banner.link == null ||
+          banner.link!.isEmpty) {
+        debugPrint('⚠️ Bannière non liée à un établissement, pas de notification');
+        return;
+      }
+
+      // Récupérer l'établissement pour obtenir le gérant
+      final establishmentResponse = await _db
+          .from('etablissements')
+          .select('id_owner')
+          .eq('id', banner.link!)
+          .single();
+
+      final gerantId = establishmentResponse['id_owner']?.toString();
+      if (gerantId == null || gerantId.isEmpty) {
+        debugPrint('⚠️ Aucun gérant trouvé pour l\'établissement ${banner.link}');
+        return;
+      }
+
+      // Déterminer le message selon le nouveau statut
+      String statusLabel;
+      switch (newStatus) {
+        case 'publiee':
+          statusLabel = 'publiée';
+          break;
+        case 'refusee':
+          statusLabel = 'refusée';
+          break;
+        default:
+          statusLabel = 'en attente';
+      }
+
+      // Récupérer le nom de l'admin
+      final adminName = _userController.user.value.fullName.isNotEmpty
+          ? _userController.user.value.fullName
+          : 'Un administrateur';
+
+      // Envoyer la notification au gérant
+      await _db.from('notifications').insert({
+        'user_id': gerantId,
+        'title': 'Statut de bannière modifié',
+        'message':
+            '$adminName a changé le statut de votre bannière "${banner.name}" en "$statusLabel".',
+        'read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      debugPrint('✅ Notification envoyée au gérant $gerantId pour le changement de statut');
+    } catch (e) {
+      debugPrint('⚠️ Erreur envoi notification au gérant: $e');
+      // Ne pas faire échouer la modification du statut si la notification échoue
+    }
   }
 
   /// Notifier les admins lorsqu'une modification est en attente pour une bannière publiée

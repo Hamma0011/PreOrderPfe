@@ -26,13 +26,20 @@ class StatusOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = status == currentStatus;
-
+ 
     return InkWell(
       onTap: isSelected
           ? null
-          : () {
+          : () async {
               Get.back();
-              controller.updateBannerStatus(banner.id, status);
+              Get.back();  // Fermer le dialog
+              await controller.updateBannerStatus(banner.id, status);
+              // Retourner à la page précédente (BannerManagementScreen) après modification
+              // Attendre un court délai pour que le snackbar s'affiche
+              await Future.delayed(const Duration(milliseconds:300));
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
             },
       child: Container(
         padding: const EdgeInsets.all(12),

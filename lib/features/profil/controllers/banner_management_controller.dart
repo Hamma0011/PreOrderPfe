@@ -65,6 +65,7 @@ class BannerManagementController extends GetxController
 
   Future<void> updateBannerStatus(String bannerId, String newStatus) async {
     await bannerController.updateBannerStatus(bannerId, newStatus);
+    // La page se met à jour automatiquement via Realtime, pas besoin de recharger
   }
 
   Future<void> deleteBanner(String bannerId) async {
