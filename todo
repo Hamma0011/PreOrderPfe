@@ -1,0 +1,19 @@
+null check value fel itinéraire, 
+Dashboard nzidou (barchart )
+dashboard filtre par étabilssement pour admin
+vérifier les statistiques
+revenue tete7seb fi date commande , donc elle doit etre dans le jour de livraison
+erreur de calcul temps : si on modifie une commande le temps de préparation sera du deuxième article
+delivery date dima null héki normlment yet7adt fiha date wa9t gerant ya3mlha livré 
+w dashbord twali te7sb date héki f blast date commande béch y7sb revenu
+Commande ken majech hazha client twali annuler automatiquement E5er wa9t 5edma
+
+
+changer tout les navigator.pop(context) par get.back
+changer tout les modal bottom sheet par get.bottomsheet
+
+
+ajouter bouton dans gestion des bannieres pour permettre a admin de supprimer une bannière
+bannière en attente , type de lien ne se voit pas dans mode clair
+produit sélectionnable
+bannière affiché, pour admin ajouter nom de letablissement et nom de son gerant

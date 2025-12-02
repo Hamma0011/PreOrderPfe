@@ -1,0 +1,363 @@
+PROPOSED MVVM STRUCTURE TREE
+============================
+
+lib/
+├── main.dart
+├── app.dart
+├── navigation_menu.dart
+│
+├── core/                                    # Core configuration
+│   ├── constants/
+│   │   ├── api_constants.dart
+│   │   ├── colors.dart
+│   │   ├── enums.dart
+│   │   ├── image_strings.dart
+│   │   ├── sizes.dart
+│   │   └── text_strings.dart
+│   │
+│   ├── theme/
+│   │   ├── theme.dart
+│   │   └── widget_themes/
+│   │       ├── appbar_theme.dart
+│   │       ├── bottom_sheet_theme.dart
+│   │       ├── checkbox_theme.dart
+│   │       ├── chip_theme.dart
+│   │       ├── elevated_button_theme.dart
+│   │       ├── outlined_button_theme.dart
+│   │       ├── text_field_theme.dart
+│   │       └── text_theme.dart
+│   │
+│   ├── utils/
+│   │   ├── device/
+│   │   │   └── device_utility.dart
+│   │   ├── exceptions/
+│   │   │   ├── exceptions.dart
+│   │   │   ├── firebase_exceptions.dart
+│   │   │   ├── format_exceptions.dart
+│   │   │   ├── platform_exceptions.dart
+│   │   │   ├── supabase_auth_exceptions.dart
+│   │   │   └── supabase_exception.dart
+│   │   ├── formatters/
+│   │   │   └── formatter.dart
+│   │   ├── helpers/
+│   │   │   ├── cloud_helper_functions.dart
+│   │   │   ├── helper_functions.dart
+│   │   │   ├── network_manager.dart
+│   │   │   └── pricing_calculator.dart
+│   │   ├── http/
+│   │   │   └── http_client.dart
+│   │   ├── local_storage/
+│   │   │   └── storage_utility.dart
+│   │   ├── logging/
+│   │   │   └── logger.dart
+│   │   ├── popups/
+│   │   │   ├── full_screen_loader.dart
+│   │   │   └── loaders.dart
+│   │   ├── validators/
+│   │   │   └── validation.dart
+│   │   └── animations/
+│   │       └── depth_transformer.dart
+│   │
+│   └── bindings/
+│       └── general_binding.dart
+│
+├── data/                                    # Data access layer
+│   ├── repositories/
+│   │   ├── address/
+│   │   │   └── address_repository.dart
+│   │   ├── authentication/
+│   │   │   └── authentication_repository.dart
+│   │   ├── banner/
+│   │   │   └── banner_repository.dart
+│   │   ├── categories/
+│   │   │   └── category_repository.dart
+│   │   ├── etablissement/
+│   │   │   └── etablissement_repository.dart
+│   │   ├── horaire/
+│   │   │   └── horaire_repository.dart
+│   │   ├── order/
+│   │   │   └── order_repository.dart
+│   │   ├── product/
+│   │   │   └── produit_repository.dart
+│   │   └── user/
+│   │       └── user_repository.dart
+│   │
+│   └── services/
+│       └── arrival_time_calculator_service.dart
+│
+├── features/                                # Feature modules
+│   │
+│   ├── authentication/                      # Authentication Feature
+│   │   ├── models/
+│   │   │   └── (auth-specific models if any)
+│   │   │
+│   │   ├── viewmodels/                      # MVVM: ViewModels
+│   │   │   ├── login/
+│   │   │   │   └── login_viewmodel.dart
+│   │   │   ├── signup/
+│   │   │   │   ├── signup_viewmodel.dart
+│   │   │   │   └── verify_otp_viewmodel.dart
+│   │   │   └── onboarding/
+│   │   │       └── onboarding_viewmodel.dart
+│   │   │
+│   │   ├── views/                           # MVVM: Views
+│   │   │   ├── login/
+│   │   │   │   ├── login_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── login_form.dart
+│   │   │   │       └── login_header.dart
+│   │   │   ├── signup/
+│   │   │   │   ├── signup_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── signup_form.dart
+│   │   │   │       └── verify_email_screen.dart
+│   │   │   ├── onboarding/
+│   │   │   │   ├── onboarding_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       └── onboarding_page.dart
+│   │   │   └── splash/
+│   │   │       └── splash_screen.dart
+│   │   │
+│   │   └── bindings/
+│   │       └── authentication_binding.dart
+│   │
+│   ├── shop/                                # Shop Feature
+│   │   ├── models/                          # MVVM: Models
+│   │   │   ├── product/
+│   │   │   │   ├── product_model.dart
+│   │   │   │   ├── produit_model.dart
+│   │   │   │   ├── product_variation_model.dart
+│   │   │   │   ├── product_attribute_model.dart
+│   │   │   │   └── taille_prix_model.dart
+│   │   │   ├── cart/
+│   │   │   │   └── cart_item_model.dart
+│   │   │   ├── order/
+│   │   │   │   ├── order_model.dart
+│   │   │   │   └── payment_method_model.dart
+│   │   │   ├── category/
+│   │   │   │   ├── category_model.dart
+│   │   │   │   └── brand_category_model.dart
+│   │   │   ├── brand/
+│   │   │   │   └── brand_model.dart
+│   │   │   ├── establishment/
+│   │   │   │   ├── etablissement_model.dart
+│   │   │   │   ├── horaire_model.dart
+│   │   │   │   ├── jour_semaine.dart
+│   │   │   │   └── statut_etablissement_model.dart
+│   │   │   └── banner/
+│   │   │       └── banner_model.dart
+│   │   │
+│   │   ├── viewmodels/                      # MVVM: ViewModels
+│   │   │   ├── product/
+│   │   │   │   ├── product_viewmodel.dart
+│   │   │   │   ├── produit_viewmodel.dart
+│   │   │   │   ├── all_products_viewmodel.dart
+│   │   │   │   ├── favorites_viewmodel.dart
+│   │   │   │   ├── images_viewmodel.dart
+│   │   │   │   ├── variation_viewmodel.dart
+│   │   │   │   └── share_viewmodel.dart
+│   │   │   ├── cart/
+│   │   │   │   └── cart_viewmodel.dart
+│   │   │   ├── order/
+│   │   │   │   ├── order_viewmodel.dart
+│   │   │   │   ├── order_list_viewmodel.dart
+│   │   │   │   └── checkout_viewmodel.dart
+│   │   │   ├── category/
+│   │   │   │   └── category_viewmodel.dart
+│   │   │   ├── brand/
+│   │   │   │   └── brand_viewmodel.dart
+│   │   │   ├── establishment/
+│   │   │   │   ├── establishment_viewmodel.dart
+│   │   │   │   └── horaire_viewmodel.dart
+│   │   │   ├── home/
+│   │   │   │   ├── home_viewmodel.dart
+│   │   │   │   └── banner_viewmodel.dart
+│   │   │   ├── search/
+│   │   │   │   ├── search_viewmodel.dart
+│   │   │   │   └── product_search_viewmodel.dart
+│   │   │   ├── navigation/
+│   │   │   │   └── navigation_viewmodel.dart
+│   │   │   └── dashboard/
+│   │   │       └── dashboard_viewmodel.dart
+│   │   │
+│   │   ├── views/                           # MVVM: Views
+│   │   │   ├── product/
+│   │   │   │   ├── product_list_screen.dart
+│   │   │   │   ├── product_detail_screen.dart
+│   │   │   │   ├── product_reviews_screen.dart
+│   │   │   │   ├── add_product_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── product_card.dart
+│   │   │   │       ├── product_image_slider.dart
+│   │   │   │       ├── product_attributes.dart
+│   │   │   │       ├── product_quantity_controls.dart
+│   │   │   │       └── product_bottom_bar.dart
+│   │   │   ├── cart/
+│   │   │   │   ├── cart_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── cart_item_tile.dart
+│   │   │   │       ├── cart_bottom_section.dart
+│   │   │   │       └── empty_cart_view.dart
+│   │   │   ├── order/
+│   │   │   │   ├── order_list_screen.dart
+│   │   │   │   ├── order_detail_screen.dart
+│   │   │   │   ├── order_tracking_screen.dart
+│   │   │   │   ├── checkout_screen.dart
+│   │   │   │   ├── delivery_map_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── order_card.dart
+│   │   │   │       ├── payment_tile.dart
+│   │   │   │       └── time_slot_modal.dart
+│   │   │   ├── category/
+│   │   │   │   ├── category_list_screen.dart
+│   │   │   │   ├── category_detail_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       └── category_card.dart
+│   │   │   ├── brand/
+│   │   │   │   ├── brand_list_screen.dart
+│   │   │   │   ├── brand_detail_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       └── brand_card.dart
+│   │   │   ├── establishment/
+│   │   │   │   ├── establishment_list_screen.dart
+│   │   │   │   ├── establishment_detail_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       └── establishment_card.dart
+│   │   │   ├── home/
+│   │   │   │   ├── home_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       ├── home_appbar.dart
+│   │   │   │       ├── promo_slider.dart
+│   │   │   │       └── search_overlay.dart
+│   │   │   ├── favorites/
+│   │   │   │   └── favorites_screen.dart
+│   │   │   └── search/
+│   │   │       └── search_screen.dart
+│   │   │
+│   │   └── bindings/
+│   │       └── shop_binding.dart
+│   │
+│   ├── personalization/                     # Personalization Feature
+│   │   ├── models/                          # MVVM: Models
+│   │   │   ├── user_model.dart
+│   │   │   └── address_model.dart
+│   │   │
+│   │   ├── viewmodels/                      # MVVM: ViewModels
+│   │   │   ├── user_viewmodel.dart
+│   │   │   ├── address_viewmodel.dart
+│   │   │   ├── location_viewmodel.dart
+│   │   │   ├── update_name_viewmodel.dart
+│   │   │   └── user_management_viewmodel.dart
+│   │   │
+│   │   ├── views/                           # MVVM: Views
+│   │   │   ├── profile/
+│   │   │   │   ├── profile_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   ├── settings/
+│   │   │   │   ├── settings_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   ├── address/
+│   │   │   │   ├── address_list_screen.dart
+│   │   │   │   ├── address_form_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   ├── dashboard/
+│   │   │   │   ├── admin_dashboard_screen.dart
+│   │   │   │   ├── manager_dashboard_screen.dart
+│   │   │   │   └── widgets/
+│   │   │   │       └── dashboard_side_menu.dart
+│   │   │   ├── brands/
+│   │   │   │   └── (brand management screens)
+│   │   │   ├── categories/
+│   │   │   │   └── (category management screens)
+│   │   │   └── establishments/
+│   │   │       └── (establishment management screens)
+│   │   │
+│   │   └── bindings/
+│   │       └── personalization_binding.dart
+│   │
+│   └── notification/                        # Notification Feature
+│       ├── models/                          # MVVM: Models
+│       │   └── notification_model.dart
+│       │
+│       ├── viewmodels/                      # MVVM: ViewModels
+│       │   └── notification_viewmodel.dart
+│       │
+│       ├── views/                           # MVVM: Views
+│       │   ├── notifications_screen.dart
+│       │   └── widgets/
+│       │       └── notification_tile.dart
+│       │
+│       └── bindings/
+│           └── notification_binding.dart
+│
+└── shared/                                  # Shared components
+    ├── widgets/                             # Reusable widgets
+    │   ├── appbar/
+    │   │   ├── appbar.dart
+    │   │   └── tabbar.dart
+    │   ├── buttons/
+    │   │   └── (reusable buttons)
+    │   ├── cards/
+    │   │   ├── brand_card.dart
+    │   │   ├── category_card.dart
+    │   │   └── product_card.dart
+    │   ├── images/
+    │   │   ├── circular_image.dart
+    │   │   └── rounded_image.dart
+    │   ├── layouts/
+    │   │   └── grid_layout.dart
+    │   ├── list_tiles/
+    │   │   ├── settings_menu_tile.dart
+    │   │   └── user_profile_tile.dart
+    │   ├── shimmer/
+    │   │   ├── shimmer_effect.dart
+    │   │   └── (other shimmer effects)
+    │   ├── loaders/
+    │   │   ├── animation_loader.dart
+    │   │   └── circular_loader.dart
+    │   └── success_screen/
+    │       └── success_screen.dart
+    │
+    └── styles/                              # Shared styles
+        ├── shadows.dart
+        └── spacing_styles.dart
+
+
+KEY CHANGES FROM CURRENT STRUCTURE:
+===================================
+
+1. controllers/ → viewmodels/          (Rename to reflect MVVM pattern)
+2. screens/ → views/                   (Rename to reflect MVVM pattern)
+3. utils/ → core/utils/                (Move to core for better organization)
+4. common/ → shared/                   (Rename for clarity)
+5. All feature modules follow: models/ | viewmodels/ | views/ | bindings/
+
+
+MVVM LAYER RESPONSIBILITIES:
+============================
+
+MODEL:
+  - Pure data classes
+  - JSON serialization/deserialization
+  - No business logic
+  - No UI dependencies
+
+VIEWMODEL:
+  - State management (Rx observables)
+  - Business logic
+  - Repository communication
+  - Data transformation for views
+  - User action handling
+
+VIEW:
+  - UI rendering
+  - User interaction handling
+  - Display data from ViewModel
+  - Minimal state (only UI state)
+
+REPOSITORY:
+  - Data access abstraction
+  - API/database communication
+  - Data caching
+  - No business logic
+
