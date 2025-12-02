@@ -66,7 +66,8 @@ class BannerManagementScreen extends StatelessWidget {
       child: ListView.builder(
         padding: const EdgeInsets.all(AppSizes.defaultSpace),
         itemCount: banners.length,
-        itemBuilder: (_, i) => _buildBannerCard(banners[i], context, controller),
+        itemBuilder: (_, i) =>
+            _buildBannerCard(banners[i], context, controller),
       ),
     );
   }
@@ -115,7 +116,12 @@ class BannerManagementScreen extends StatelessWidget {
         trailing: controller.isAdmin
             ? (controller.hasPendingChanges(banner)
                 ? _buildPendingChangesActions(banner, controller)
-                : null)
+                : IconButton(
+                    icon: const Icon(Iconsax.trash, color: Colors.red),
+                    tooltip: 'Supprimer la bannière',
+                    onPressed: () =>
+                        _showDeleteDialog(context, banner, controller),
+                  ))
             : controller.isGerant
                 ? IconButton(
                     icon: const Icon(Iconsax.more),
@@ -164,8 +170,9 @@ class BannerManagementScreen extends StatelessWidget {
           color: statusColor.shade50,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color:
-                controller.isAdmin ? statusColor.shade300 : statusColor.shade200,
+            color: controller.isAdmin
+                ? statusColor.shade300
+                : statusColor.shade200,
             width: controller.isAdmin ? 1.5 : 1,
           ),
         ),

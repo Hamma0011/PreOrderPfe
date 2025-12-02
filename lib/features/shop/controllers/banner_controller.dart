@@ -408,11 +408,11 @@ class BannerController extends GetxController {
   /// Delete banner
   Future<void> deleteBanner(String bannerId) async {
     try {
-      // Check permissions
-      if (!canManageBanners) {
+      // Check permissions - Admin et Gérant peuvent supprimer
+      if (!isAdmin && !canManageBanners) {
         TLoaders.errorSnackBar(
           title: 'Permission refusée',
-          message: 'Seuls les gérants peuvent supprimer des bannières',
+          message: 'Seuls les administrateurs et les gérants peuvent supprimer des bannières',
         );
         return;
       }
