@@ -29,7 +29,6 @@ class BannerController extends GetxController {
 
   // Observable variables
   final RxList<BannerModel> allBanners = <BannerModel>[].obs;
-  final RxList<BannerModel> publishedBannersCache = <BannerModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxString searchQuery = ''.obs;
   final RxInt selectedTabIndex = 0.obs; // 0: en_attente, 1: publiee, 2: refusee
@@ -84,8 +83,20 @@ class BannerController extends GetxController {
 
   Future<void> loadProducts() async {
     try {
-      final fetchedProducts = await produitRepository.getAllProducts();
-      products.assignAll(fetchedProducts);
+      if (_userController.userRole == 'Gérant') {
+        final gerantEtablissement =
+            await etablissementController.getEtablissementUtilisateurConnecte();
+        if (gerantEtablissement != null && (gerantEtablissement.id?.isNotEmpty ?? false)) {
+          final list = await produitRepository
+              .getProductsByEtablissement(gerantEtablissement.id!);
+          products.assignAll(list);
+        } else {
+          products.clear();
+        }
+      } else {
+        final list = await produitRepository.getAllProducts();
+        products.assignAll(list);
+      }
     } catch (e) {
       debugPrint('Erreur chargement produits: $e');
     }
@@ -107,9 +118,8 @@ class BannerController extends GetxController {
         }
       } else {
         // Pour admin, charger tous les établissements
-        final fetchedEstablishments =
-            await etablissementController.getTousEtablissements();
-        establishments.assignAll(fetchedEstablishments);
+        final list = await etablissementController.getTousEtablissements();
+        establishments.assignAll(list);
       }
     } catch (e) {
       debugPrint('Erreur chargement établissements: $e');
@@ -123,8 +133,13 @@ class BannerController extends GetxController {
       if (isGerant) {
         final etab = await etablissementController.getEtablissementUtilisateurConnecte();
         if (etab != null && (etab.id?.isNotEmpty ?? false)) {
-          final banners = await _bannerRepository.getBannersByEstablishment(etab.id!);
-          allBanners.assignAll(banners);
+          final bannersEstab = await _bannerRepository.getBannersByEstablishment(etab.id!);
+          final produits = await produitRepository.getProductsByEtablissement(etab.id!);
+          final productIds = produits.map((p) => p.id).where((id) => id.isNotEmpty).toList();
+          final bannersProducts = await _bannerRepository.getBannersByProductIds(productIds);
+          final combined = [...bannersEstab, ...bannersProducts];
+          combined.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+          allBanners.assignAll(combined);
         } else {
           allBanners.clear();
         }
@@ -142,24 +157,14 @@ class BannerController extends GetxController {
 
   /// Get published banners from cache (allBanners) - Ne recharge pas depuis la DB
   List<BannerModel> getPublishedBanners() {
-    if (publishedBannersCache.isNotEmpty) {
-      return publishedBannersCache.toList();
-    }
     return getBannersByStatus('publiee');
   }
 
   /// Load published banners from DB (only if needed)
   Future<void> loadPublishedBannersIfNeeded() async {
-    if (publishedBannersCache.isEmpty && !isLoading.value) {
-      try {
-        isLoading.value = true;
-        final banners = await _bannerRepository.getPublishedBanners();
-        publishedBannersCache.assignAll(banners);
-      } catch (e) {
-        debugPrint('Erreur chargement bannières publiées: $e');
-      } finally {
-        isLoading.value = false;
-      }
+    // Si allBanners est vide, charger toutes les bannières
+    if (allBanners.isEmpty && !isLoading.value) {
+      await fetchAllBanners();
     }
   }
 
@@ -350,7 +355,6 @@ class BannerController extends GetxController {
 
         await _bannerRepository.updateBanner(banner);
         await fetchAllBanners();
-        await _notifyAdminsUpdatedAwaiting(existingBanner.name);
 
         clearForm();
         Get.back();
@@ -359,19 +363,26 @@ class BannerController extends GetxController {
           message: 'Bannière mise à jour avec succès',
         );
       } else if (existingBanner.status == 'publiee') {
-        // Statut "publiee" : sauvegarder les modifications en attente
-        await _bannerRepository.savePendingChanges(bannerId, updatedData);
-        await fetchAllBanners();
+        // Statut "publiee" : modification directe et retour en attente
+        final banner = BannerModel(
+          id: bannerId,
+          name: updatedData['name'].toString(),
+          imageUrl: updatedData['image_url'].toString(),
+          status: 'en_attente',
+          link: updatedData['link']?.toString(),
+          linkType: updatedData['link_type']?.toString(),
+          createdAt: existingBanner.createdAt,
+          updatedAt: DateTime.now(),
+        );
 
-        // Notifier les admins
-        await _notifyAdminsPendingChanges(bannerId, existingBanner.name);
+        await _bannerRepository.updateBanner(banner);
+        await fetchAllBanners();
 
         clearForm();
         Get.back();
         TLoaders.successSnackBar(
-          title: 'Modifications en attente',
-          message:
-              'Vos modifications ont été soumises et attendent l\'approbation de l\'administrateur',
+          title: 'Succès',
+          message: 'Bannière modifiée et remise en attente de validation',
         );
       } else if (existingBanner.status == 'refusee') {
         // Statut "refusee" : modifier directement et remettre en attente
@@ -388,7 +399,6 @@ class BannerController extends GetxController {
 
         await _bannerRepository.updateBanner(banner);
         await fetchAllBanners();
-        await _notifyAdminsUpdatedAwaiting(existingBanner.name);
 
         clearForm();
         Get.back();
@@ -408,11 +418,11 @@ class BannerController extends GetxController {
   /// Delete banner
   Future<void> deleteBanner(String bannerId) async {
     try {
-      // Check permissions - Admin et Gérant peuvent supprimer
-      if (!isAdmin && !canManageBanners) {
+      // Check permissions
+      if (!(isGerant || isAdmin)) {
         TLoaders.errorSnackBar(
           title: 'Permission refusée',
-          message: 'Seuls les administrateurs et les gérants peuvent supprimer des bannières',
+          message: 'Seuls les administrateurs et gérants peuvent supprimer des bannières',
         );
         return;
       }
@@ -464,15 +474,8 @@ class BannerController extends GetxController {
         return;
       }
 
-      // Récupérer la bannière pour obtenir les informations nécessaires
-      final banner = allBanners.firstWhere((b) => b.id == bannerId);
-      
       isLoading.value = true;
       await _bannerRepository.updateBannerStatus(bannerId, newStatus);
-      
-      // Notifier le gérant du changement de statut
-      await _notifyGerantStatusChange(banner, newStatus);
-      
       // Ne pas recharger toutes les bannières, le Realtime s'en chargera
       // Cela évite les conflits et permet une mise à jour plus fluide
       // await fetchAllBanners();
@@ -562,13 +565,6 @@ class BannerController extends GetxController {
                 allBanners.refresh();
                 debugPrint('✅ Bannière ajoutée à la liste');
               }
-              if (banner.status == 'publiee') {
-                final pIndex = publishedBannersCache.indexWhere((b) => b.id == banner.id);
-                if (pIndex == -1) {
-                  publishedBannersCache.insert(0, banner);
-                  publishedBannersCache.refresh();
-                }
-              }
             } else if (eventType == PostgresChangeEvent.update) {
               final banner = BannerModel.fromJson(newData);
               debugPrint(
@@ -588,21 +584,6 @@ class BannerController extends GetxController {
                 debugPrint(
                     '✅ Bannière ajoutée (n\'existait pas dans la liste)');
               }
-              final pbIndex = publishedBannersCache.indexWhere((b) => b.id == banner.id);
-              if (banner.status == 'publiee') {
-                if (pbIndex != -1) {
-                  publishedBannersCache.removeAt(pbIndex);
-                  publishedBannersCache.insert(pbIndex, banner);
-                } else {
-                  publishedBannersCache.insert(0, banner);
-                }
-                publishedBannersCache.refresh();
-              } else {
-                if (pbIndex != -1) {
-                  publishedBannersCache.removeAt(pbIndex);
-                  publishedBannersCache.refresh();
-                }
-              }
             } else if (eventType == PostgresChangeEvent.delete) {
               final id = oldData['id']?.toString();
               if (id != null) {
@@ -611,11 +592,6 @@ class BannerController extends GetxController {
                 if (hadBanner) {
                   allBanners.refresh();
                   debugPrint('✅ Bannière supprimée de la liste: $id');
-                }
-                final hadPublished = publishedBannersCache.any((b) => b.id == id);
-                publishedBannersCache.removeWhere((b) => b.id == id);
-                if (hadPublished) {
-                  publishedBannersCache.refresh();
                 }
               }
             }
@@ -695,34 +671,6 @@ class BannerController extends GetxController {
       debugPrint('⚠️ Erreur envoi notification aux admins: $e');
       // Ne pas faire échouer l'ajout de la bannière si la notification échoue
     }
-  }
-
-  Future<void> _notifyAdminsUpdatedAwaiting(String bannerName) async {
-    try {
-      final gerantName = _userController.user.value.fullName.isNotEmpty
-          ? _userController.user.value.fullName
-          : 'Un gérant';
-
-      final adminUsers =
-          await _db.from('users').select('id').eq('role', 'Admin');
-
-      if (adminUsers.isEmpty) {
-        return;
-      }
-
-      for (final admin in adminUsers) {
-        try {
-          await _db.from('notifications').insert({
-            'user_id': admin['id'],
-            'title': 'Bannière à valider',
-            'message':
-                '$gerantName a mis à jour la bannière "$bannerName" et elle est en attente.',
-            'read': false,
-            'created_at': DateTime.now().toIso8601String(),
-          });
-        } catch (_) {}
-      }
-    } catch (_) {}
   }
 
   /// Approuver les modifications en attente (Admin only)
@@ -809,66 +757,6 @@ class BannerController extends GetxController {
   /// Vérifier si une bannière a des modifications en attente
   bool hasPendingChanges(BannerModel banner) {
     return banner.pendingChanges != null && banner.pendingChanges!.isNotEmpty;
-  }
-
-  /// Notifier le gérant lorsqu'un admin change le statut de sa bannière
-  Future<void> _notifyGerantStatusChange(
-      BannerModel banner, String newStatus) async {
-    try {
-      // Vérifier si la bannière est liée à un établissement
-      if (banner.linkType != 'establishment' ||
-          banner.link == null ||
-          banner.link!.isEmpty) {
-        debugPrint('⚠️ Bannière non liée à un établissement, pas de notification');
-        return;
-      }
-
-      // Récupérer l'établissement pour obtenir le gérant
-      final establishmentResponse = await _db
-          .from('etablissements')
-          .select('id_owner')
-          .eq('id', banner.link!)
-          .single();
-
-      final gerantId = establishmentResponse['id_owner']?.toString();
-      if (gerantId == null || gerantId.isEmpty) {
-        debugPrint('⚠️ Aucun gérant trouvé pour l\'établissement ${banner.link}');
-        return;
-      }
-
-      // Déterminer le message selon le nouveau statut
-      String statusLabel;
-      switch (newStatus) {
-        case 'publiee':
-          statusLabel = 'publiée';
-          break;
-        case 'refusee':
-          statusLabel = 'refusée';
-          break;
-        default:
-          statusLabel = 'en attente';
-      }
-
-      // Récupérer le nom de l'admin
-      final adminName = _userController.user.value.fullName.isNotEmpty
-          ? _userController.user.value.fullName
-          : 'Un administrateur';
-
-      // Envoyer la notification au gérant
-      await _db.from('notifications').insert({
-        'user_id': gerantId,
-        'title': 'Statut de bannière modifié',
-        'message':
-            '$adminName a changé le statut de votre bannière "${banner.name}" en "$statusLabel".',
-        'read': false,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-
-      debugPrint('✅ Notification envoyée au gérant $gerantId pour le changement de statut');
-    } catch (e) {
-      debugPrint('⚠️ Erreur envoi notification au gérant: $e');
-      // Ne pas faire échouer la modification du statut si la notification échoue
-    }
   }
 
   /// Notifier les admins lorsqu'une modification est en attente pour une bannière publiée

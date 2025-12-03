@@ -11,7 +11,9 @@ class NotificationBell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  final notifController = Get.find<NotificationController>();
+    final notifController = Get.isRegistered<NotificationController>()
+        ? Get.find<NotificationController>()
+        : Get.put(NotificationController(), permanent: true);
     return Obx(() {
       final count = notifController.unreadCount;
       return IconButton(

@@ -10,12 +10,13 @@ import '../../../models/dashboard_stats_model.dart';
 class OrdersByStatusChart extends StatelessWidget {
   final DashboardStats stats;
   final bool dark;
-  const OrdersByStatusChart({super.key, required this.stats, required this.dark});
+  const OrdersByStatusChart(
+      {super.key, required this.stats, required this.dark});
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<GerantDashboardController>();
-    return  Container(
+    return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
         color: dark ? TColors.darkContainer : Colors.white,
@@ -39,8 +40,8 @@ class OrdersByStatusChart extends StatelessWidget {
           ...stats.ordersByStatus.entries.map((entry) {
             final status = entry.key;
             final count = entry.value;
-                    final percentage =
-                  controller.calculatePercentage(count, stats.totalOrders);
+            final percentage =
+                controller.calculatePercentage(count, stats.totalOrders);
 
             Color statusColor;
             switch (status) {
@@ -71,7 +72,7 @@ class OrdersByStatusChart extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(THelperFunctions.getStatusLabel(status as OrderStatus)),
+                      Text(_getStatusLabel(status)),
                       Text('$count (${percentage.toStringAsFixed(1)}%)'),
                     ],
                   ),
@@ -88,5 +89,38 @@ class OrdersByStatusChart extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Convertit une chaîne de statut en OrderStatus et retourne le label
+  String _getStatusLabel(String status) {
+    if (status.isEmpty) {
+      return 'Inconnu';
+    }
+
+    OrderStatus orderStatus;
+    switch (status.toLowerCase().trim()) {
+      case 'pending':
+        orderStatus = OrderStatus.pending;
+        break;
+      case 'preparing':
+        orderStatus = OrderStatus.preparing;
+        break;
+      case 'ready':
+        orderStatus = OrderStatus.ready;
+        break;
+      case 'delivered':
+        orderStatus = OrderStatus.delivered;
+        break;
+      case 'cancelled':
+        orderStatus = OrderStatus.cancelled;
+        break;
+      case 'refused':
+        orderStatus = OrderStatus.refused;
+        break;
+      default:
+        // Si le statut n'est pas reconnu, retourner 'pending' par défaut
+        orderStatus = OrderStatus.pending;
+    }
+    return THelperFunctions.getStatusLabel(orderStatus);
   }
 }

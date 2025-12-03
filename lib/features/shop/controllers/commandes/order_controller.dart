@@ -243,6 +243,11 @@ class OrderController extends GetxController {
           message =
               "Votre commande (Code: $orderCode) a été refusée. Raison: $refusalReason";
           break;
+        case OrderStatus.cancelled:
+          title = "Commande annulée";
+          message =
+              "Votre commande (Code: $orderCode) a été annulée.";
+          break;
         default:
           return;
       }
@@ -968,14 +973,22 @@ class OrderController extends GetxController {
               ? order.codeRetrait!
               : orderId.substring(0, 8).toUpperCase();
 
-      // Envoyer une notification à l'établissement
-      await _envoyerNotification(
-        userId: order.etablissementId, // Cela va à l'établissement
-        title: "Commande annulée",
-        message: "Le client a annulé la commande (Code: $orderCode)",
-        etablissementId: order.etablissementId,
-        receiverRole: 'gérant',
-      );
+      final etabOwnerForCancel = await _db
+          .from('etablissements')
+          .select('id_owner')
+          .eq('id', order.etablissementId)
+          .maybeSingle();
+      final gerantIdForCancel =
+          etabOwnerForCancel?['id_owner']?.toString() ?? '';
+      if (gerantIdForCancel.isNotEmpty) {
+        await _envoyerNotification(
+          userId: gerantIdForCancel,
+          title: "Commande annulée",
+          message: "Le client a annulé la commande (Code: $orderCode)",
+          etablissementId: order.etablissementId,
+          receiverRole: 'gérant',
+        );
+      }
 
       TLoaders.successSnackBar(
         title: "Succès",
@@ -1172,15 +1185,22 @@ class OrderController extends GetxController {
               ? order.codeRetrait!
               : orderId.substring(0, 8).toUpperCase();
 
-      // Envoyer une notification à l'établissement
-      await _envoyerNotification(
-        userId: order.etablissementId,
-        title: "Commande modifiée",
-        message:
-            "Le client a modifié le créneau de retrait pour la commande (Code: $orderCode)",
-        etablissementId: order.etablissementId,
-        receiverRole: 'gérant',
-      );
+      final etabOwner = await _db
+          .from('etablissements')
+          .select('id_owner')
+          .eq('id', order.etablissementId)
+          .maybeSingle();
+      final gerantId = etabOwner?['id_owner']?.toString() ?? '';
+      if (gerantId.isNotEmpty) {
+        await _envoyerNotification(
+          userId: gerantId,
+          title: "Commande modifiée",
+          message:
+              "Le client a modifié le créneau de retrait pour la commande (Code: $orderCode)",
+          etablissementId: order.etablissementId,
+          receiverRole: 'gérant',
+        );
+      }
 
       // Recharger les commandes pour obtenir les données mises à jour
       await recupererCommandesUtilisateur();

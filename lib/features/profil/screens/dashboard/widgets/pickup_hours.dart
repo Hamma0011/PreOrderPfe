@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:caferesto/features/profil/models/dashboard_stats_model.dart';
-import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
-import '../../../controllers/gerant_dashboard_controller.dart';
 
 class PickupHours extends StatelessWidget {
   final DashboardStats stats;
@@ -14,7 +13,6 @@ class PickupHours extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<GerantDashboardController>();
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
@@ -48,75 +46,113 @@ class PickupHours extends StatelessWidget {
           if (stats.pickupHours.isEmpty)
             const Text('Aucune donnée disponible')
           else
-            ...stats.pickupHours.asMap().entries.map((entry) {
-              final index = entry.key;
-              final hourData = entry.value;
-              final hour = hourData['hour'] as String? ?? 'Inconnu';
-              final count = hourData['count'] as int? ?? 0;
-              final maxCount = stats.pickupHours.isNotEmpty
-                  ? (stats.pickupHours[0]['count'] as int? ?? 1)
-                  : 1;
-              final percentage =
-                  controller.calculatePercentage(count, maxCount);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.spaceBtwItems),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${index + 1}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[700],
-                                  ),
+            SizedBox(
+              height: 250,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: () {
+                    final counts = stats.pickupHours
+                        .map((e) => (e['count'] as int?) ?? 0)
+                        .toList();
+                    final maxCount =
+                        counts.isNotEmpty && counts.any((c) => c > 0)
+                            ? counts.reduce((a, b) => a > b ? a : b)
+                            : 10;
+                    return maxCount > 0
+                        ? (maxCount * 1.2).ceilToDouble()
+                        : 10.0;
+                  }(),
+                  minY: 0,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (group) => Colors.blue.shade600,
+                      tooltipRoundedRadius: 8,
+                      tooltipPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final hour = (stats.pickupHours[groupIndex]['hour']
+                                as String?) ??
+                            '';
+                        final count = (stats.pickupHours[groupIndex]['count']
+                                as int?) ??
+                            0;
+                        return BarTooltipItem(
+                          '$hour\n$count commande${count > 1 ? 's' : ''}',
+                          const TextStyle(color: Colors.white, fontSize: 12),
+                        );
+                      },
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 &&
+                              index < stats.pickupHours.length) {
+                            final hour =
+                                stats.pickupHours[index]['hour'] as String? ??
+                                    '';
+                            final label =
+                                hour.length > 5 ? hour.substring(0, 5) : hour;
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 10,
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              hour,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '$count commande${count > 1 ? 's' : ''}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange[700],
-                            fontSize: 14,
+                            );
+                          }
+                          return const Text('');
+                        },
+                      ),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                      ),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  ),
+                  barGroups: stats.pickupHours.asMap().entries.map((entry) {
+                    final count = (entry.value['count'] as int?) ?? 0;
+                    return BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: count.toDouble(),
+                          color: count > 0
+                              ? Colors.blue.shade400
+                              : Colors.grey.shade300,
+                          width: 20,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(8),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: percentage / 100,
-                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                      minHeight: 6,
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
+              ),
+            ),
         ],
       ),
     );

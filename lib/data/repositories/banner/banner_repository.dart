@@ -309,5 +309,21 @@ class BannerRepository extends GetxController {
       throw 'Échec de récupération des bannières publiées par établissement : $e';
     }
   }
-}
 
+  Future<List<BannerModel>> getBannersByProductIds(List<String> productIds) async {
+    try {
+      if (productIds.isEmpty) return [];
+      final response = await _db
+          .from(_table)
+          .select()
+          .eq('link_type', 'product')
+          .inFilter('link', productIds)
+          .order('created_at', ascending: false);
+      return response.map((banner) => BannerModel.fromJson(banner)).toList();
+    } on PostgrestException catch (e) {
+      throw 'Erreur Supabase: ${e.message}';
+    } catch (e) {
+      throw 'Échec de récupération des bannières par produits : $e';
+    }
+  }
+}

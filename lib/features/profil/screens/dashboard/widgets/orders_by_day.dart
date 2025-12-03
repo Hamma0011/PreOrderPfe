@@ -6,6 +6,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/constants/sizes.dart';
 import '../../../controllers/gerant_dashboard_controller.dart';
+import '../../../controllers/dashboard_controller.dart';
 
 class OrdersByDay extends StatelessWidget {
   final DashboardStats stats;
@@ -14,7 +15,17 @@ class OrdersByDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<GerantDashboardController>();
+    final gerantController = Get.find<GerantDashboardController>();
+    final dashboardController = Get.find<DashboardController>();
+
+    // Toujours préparer 7 jours pour éviter un état vide
+    final ordersByDayForChart =
+        dashboardController.getOrdersByDayForChart(stats.ordersByDay);
+    final counts =
+        ordersByDayForChart.map((e) => (e['count'] as int?) ?? 0).toList();
+    final maxCount = counts.isNotEmpty && counts.any((c) => c > 0)
+        ? counts.reduce((a, b) => a > b ? a : b)
+        : 1;
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
@@ -46,19 +57,13 @@ class OrdersByDay extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSizes.spaceBtwItems),
-          if (stats.ordersByDay.isEmpty)
-            const Text('Aucune donnée disponible')
-          else
-            ...stats.ordersByDay.asMap().entries.map((entry) {
-              final index = entry.key;
-              final dayData = entry.value;
-              final day = dayData['day'] as String? ?? 'Inconnu';
-              final count = dayData['count'] as int? ?? 0;
-              final maxCount = stats.ordersByDay.isNotEmpty
-                  ? (stats.ordersByDay[0]['count'] as int? ?? 1)
-                  : 1;
-              final percentage =
-                  controller.calculatePercentage(count, maxCount);
+          ...ordersByDayForChart.asMap().entries.map((entry) {
+            final index = entry.key;
+            final dayData = entry.value;
+            final day = dayData['day'] as String? ?? 'Inconnu';
+            final count = dayData['count'] as int? ?? 0;
+            final percentage =
+                gerantController.calculatePercentage(count, maxCount);
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSizes.spaceBtwItems),

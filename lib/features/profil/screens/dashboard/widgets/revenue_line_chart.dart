@@ -169,7 +169,7 @@ class RevenueLineChart extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Évolution des Revenus (Cumulatif)',
+                    'Évolution des Revenus',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -228,112 +228,113 @@ class RevenueLineChart extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 16),
-          SizedBox(
-            height: 250,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: maxRevenue > 0 ? maxRevenue / 5 : 200,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey.withValues(alpha: 0.2),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        if (value.toInt() < dailyRevenue.length) {
-                          final date = dailyRevenue[value.toInt()]['date'] as String;
-                          // Afficher seulement certains points pour éviter la surcharge
-                          final interval = dailyRevenue.length > 30 
-                              ? (dailyRevenue.length / 10).ceil()
-                              : (dailyRevenue.length > 7 
-                                  ? (dailyRevenue.length / 5).ceil()
-                                  : 1);
-                          if (value.toInt() % interval == 0 || value.toInt() == dailyRevenue.length - 1) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                _formatDateLabel(date, period),
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 10,
-                                ),
-                              ),
-                            );
-                          }
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: maxRevenue > 0 ? maxRevenue / 5 : 200,
-                      reservedSize: 50,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${value.toInt()} DT',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-                ),
-                minX: 0,
-                maxX: (dailyRevenue.length - 1).toDouble(),
-                minY: 0,
-                maxY: maxRevenue > 0 ? maxRevenue * 1.2 : 1000,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: dailyRevenue.asMap().entries.map((entry) {
-                      return FlSpot(
-                        entry.key.toDouble(),
-                        (entry.value['revenue'] as num?)?.toDouble() ?? 0.0,
+            SizedBox(
+              height: 250,
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    horizontalInterval: maxRevenue > 0 ? maxRevenue / 5 : 200,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        strokeWidth: 1,
                       );
-                    }).toList(),
-                    isCurved: true,
-                    color: Colors.blue.shade400,
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: true),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      color: Colors.blue.shade400.withValues(alpha: 0.1),
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          if (value.toInt() < dailyRevenue.length) {
+                            final date =
+                                dailyRevenue[value.toInt()]['date'] as String;
+                            // Afficher seulement certains points pour éviter la surcharge
+                            final interval = dailyRevenue.length > 30
+                                ? (dailyRevenue.length / 10).ceil()
+                                : (dailyRevenue.length > 7
+                                    ? (dailyRevenue.length / 5).ceil()
+                                    : 1);
+                            if (value.toInt() % interval == 0 ||
+                                value.toInt() == dailyRevenue.length - 1) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  _formatDateLabel(date, period),
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                          return const Text('');
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: maxRevenue > 0 ? maxRevenue / 5 : 200,
+                        reservedSize: 50,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toInt()} DT',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ],
+                  borderData: FlBorderData(
+                    show: true,
+                    border:
+                        Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  ),
+                  minX: 0,
+                  maxX: (dailyRevenue.length - 1).toDouble(),
+                  minY: 0,
+                  maxY: maxRevenue > 0 ? maxRevenue * 1.2 : 1000,
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: dailyRevenue.asMap().entries.map((entry) {
+                        return FlSpot(
+                          entry.key.toDouble(),
+                          (entry.value['revenue'] as num?)?.toDouble() ?? 0.0,
+                        );
+                      }).toList(),
+                      isCurved: true,
+                      color: Colors.blue.shade400,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: const FlDotData(show: true),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: Colors.blue.shade400.withValues(alpha: 0.1),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
     });
   }
 }
-
-

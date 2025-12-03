@@ -5,7 +5,6 @@ import '../../../../../utils/constants/sizes.dart';
 import '../../../controllers/dashboard_controller.dart';
 import 'main_stats_card.dart';
 import 'orders_bar_chart.dart';
-import 'orders_by_day.dart';
 import 'period_filter.dart';
 import 'pickup_hours.dart';
 import 'revenue_line_chart.dart';
@@ -98,7 +97,7 @@ class DashboardContent extends StatelessWidget {
                                 ),
                                 const SizedBox(
                                     height: AppSizes.spaceBtwSections),
-                                // Deuxième ligne : Orders Bar Chart et Top Etablissements
+                                // Deuxième ligne : Orders Bar Chart et Pickup Hours
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -110,17 +109,31 @@ class DashboardContent extends StatelessWidget {
                                     ),
                                     const SizedBox(
                                         width: AppSizes.spaceBtwItems),
-                                    isAdmin
-                                        ? Expanded(
-                                            child: TopEtablissementsChart(
-                                              topEtablissements:
-                                                  topEtablissements,
-                                              dark: dark,
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
+                                    Expanded(
+                                      child: PickupHours(
+                                        stats: stats,
+                                        dark: dark,
+                                      ),
+                                    ),
                                   ],
                                 ),
+                                if (isAdmin) ...[
+                                  const SizedBox(
+                                      height: AppSizes.spaceBtwSections),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: TopEtablissementsChart(
+                                          topEtablissements:
+                                              topEtablissements,
+                                          dark: dark,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                                 const SizedBox(
                                     height: AppSizes.spaceBtwSections),
                                 // Troisième ligne : Top Products et System Stats
@@ -165,12 +178,15 @@ class DashboardContent extends StatelessWidget {
                                 ),
                                 const SizedBox(
                                     height: AppSizes.spaceBtwSections),
-                                isAdmin
-                                    ? TopEtablissementsChart(
-                                        topEtablissements: topEtablissements,
-                                        dark: dark,
-                                      )
-                                    : const SizedBox.shrink(),
+                                PickupHours(stats: stats, dark: dark),
+                                if (isAdmin) ...[
+                                  const SizedBox(
+                                      height: AppSizes.spaceBtwSections),
+                                  TopEtablissementsChart(
+                                    topEtablissements: topEtablissements,
+                                    dark: dark,
+                                  ),
+                                ],
                                 const SizedBox(
                                     height: AppSizes.spaceBtwSections),
                                 TopProductsWidget(stats: stats, dark: dark),
@@ -186,37 +202,6 @@ class DashboardContent extends StatelessWidget {
                   );
                 },
               )),
-              const SizedBox(height: AppSizes.spaceBtwSections),
-
-              // Statistiques par jour et heures de pickup
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 800) {
-                    // Desktop layout
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: OrdersByDay(stats: stats, dark: dark),
-                        ),
-                        const SizedBox(width: AppSizes.spaceBtwItems),
-                        Expanded(
-                          child: PickupHours(stats: stats, dark: dark),
-                        ),
-                      ],
-                    );
-                  } else {
-                    // Mobile layout
-                    return Column(
-                      children: [
-                        OrdersByDay(stats: stats, dark: dark),
-                        const SizedBox(height: AppSizes.spaceBtwSections),
-                        PickupHours(stats: stats, dark: dark),
-                      ],
-                    );
-                  }
-                },
-              ),
               const SizedBox(height: AppSizes.spaceBtwSections),
 
               // Utilisateurs les plus fidèles

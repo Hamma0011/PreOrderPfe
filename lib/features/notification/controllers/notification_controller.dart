@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:caferesto/data/repositories/notifications/notifications_repository.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,20 +11,42 @@ import '../../profil/screens/mes_commandes/order.dart';
 import '../models/notification_model.dart';
 
 class NotificationController extends GetxController {
-  final notificationRepository = Get.find<NotificationsRepository>();
+    final notificationRepository = Get.find<NotificationsRepository>();
 
-  final notifications = <NotificationModel>[].obs;
-  final _isLoading = false.obs;
-  RealtimeChannel? _channel;
+    final notifications = <NotificationModel>[].obs;
+    final _isLoading = false.obs;
+    RealtimeChannel? _channel;
+    StreamSubscription<AuthState>? _authSubscription;
 
-  int get unreadCount => notifications.where((n) => !n.read).length;
-  bool get isLoading => _isLoading.value;
+    int get unreadCount => notifications.where((n) => !n.read).length;
+    bool get isLoading => _isLoading.value;
 
-  @override
-  void onInit() {
+    @override
+    void onInit() {
     super.onInit();
     _loadNotifications();
     _subscribeRealtime();
+
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (authState) async {
+        final event = authState.event;
+        final session = authState.session;
+
+        if (event == AuthChangeEvent.signedIn && session?.user != null) {
+          _resubscribeForUser(session!.user.id);
+          await _loadNotifications();
+        }
+
+        if (event == AuthChangeEvent.initialSession && session?.user != null) {
+          _resubscribeForUser(session!.user.id);
+        }
+
+        if (event == AuthChangeEvent.signedOut) {
+          _unsubscribe();
+          notifications.clear();
+        }
+      },
+    );
   }
 
   @override
@@ -30,6 +54,7 @@ class NotificationController extends GetxController {
     if (_channel != null) {
       notificationRepository.unsubscribeFromNotifications(_channel!);
     }
+    _authSubscription?.cancel();
     super.onClose();
   }
 
@@ -78,6 +103,35 @@ class NotificationController extends GetxController {
         );
       },
     );
+  }
+
+  void _resubscribeForUser(String userId) {
+    try {
+      _unsubscribe();
+      _channel = notificationRepository.subscribeToNotifications(
+        userId: userId,
+        onNewNotification: (newNotif) {
+          notifications.insert(0, newNotif);
+          notifications.refresh();
+          Get.snackbar(
+            newNotif.title,
+            newNotif.message,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green.withValues(alpha: 0.85),
+            colorText: Colors.white,
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint('Resubscribe error: $e');
+    }
+  }
+
+  void _unsubscribe() {
+    if (_channel != null) {
+      notificationRepository.unsubscribeFromNotifications(_channel!);
+      _channel = null;
+    }
   }
 
   Future<void> markAsRead(String id) async {

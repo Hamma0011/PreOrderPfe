@@ -55,10 +55,7 @@ class GeneralBinding extends Bindings {
     // Controllers d'authentification
     Get.lazyPut(() => OTPVerificationController(), fenix: true);
 
-    Get.lazyPut<NotificationController>(
-      () => NotificationController(),
-      fenix: true,
-    );
+    Get.put<NotificationController>(NotificationController(), permanent: true);
     Get.lazyPut<AddressController>(() => AddressController(), fenix: true);
     Get.lazyPut<AllProductsController>(() => AllProductsController(),
         fenix: true);

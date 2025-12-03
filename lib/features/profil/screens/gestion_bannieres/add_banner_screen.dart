@@ -24,27 +24,27 @@ class AddBannerScreen extends StatelessWidget {
     // Charger les données pour les dropdowns
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        final products = await produitRepository.getAllProducts();
-        bannerController.products.assignAll(products);
-      } catch (e) {
-        debugPrint('Erreur chargement produits: $e');
-      }
-      try {
-        // Si gérant, charger uniquement son établissement
         if (userController.userRole == 'Gérant') {
           final gerantEtablissement = await etablissementController
               .getEtablissementUtilisateurConnecte();
-          if (gerantEtablissement != null) {
+          if (gerantEtablissement != null && (gerantEtablissement.id?.isNotEmpty ?? false)) {
+            final products = await produitRepository
+                .getProductsByEtablissement(gerantEtablissement.id!);
+            bannerController.products.assignAll(products);
             bannerController.establishments.assignAll([gerantEtablissement]);
+          } else {
+            bannerController.products.clear();
+            bannerController.establishments.clear();
           }
         } else {
-          // Pour admin, charger tous les établissements
+          final products = await produitRepository.getAllProducts();
+          bannerController.products.assignAll(products);
           final establishments =
               await etablissementController.getTousEtablissements();
           bannerController.establishments.assignAll(establishments);
         }
       } catch (e) {
-        debugPrint('Erreur chargement établissements: $e');
+        debugPrint('Erreur chargement données: $e');
       }
     });
 

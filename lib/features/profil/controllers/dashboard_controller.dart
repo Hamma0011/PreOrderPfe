@@ -29,9 +29,12 @@ class DashboardController extends GetxController {
       false.obs; // Utiliser une plage de dates personnalisée
   final startDate = Rxn<DateTime>();
   final endDate = Rxn<DateTime>();
-  final selectedEtablissementId = Rxn<String>(); // ID de l'établissement sélectionné pour le filtre (Admin uniquement)
-  final etablissements = <Map<String, dynamic>>[].obs; // Liste des établissements pour le filtre
-  final revenuePeriodFilter = '7days'.obs; // Filtre de période pour les revenus: '7days', 'month', '3months', 'year', 'all'
+  final selectedEtablissementId = Rxn<
+      String>(); // ID de l'établissement sélectionné pour le filtre (Admin uniquement)
+  final etablissements =
+      <Map<String, dynamic>>[].obs; // Liste des établissements pour le filtre
+  final revenuePeriodFilter = '7days'
+      .obs; // Filtre de période pour les revenus: '7days', 'month', '3months', 'year', 'all'
 
   bool get isLoading => _isLoading.value;
 
@@ -52,7 +55,7 @@ class DashboardController extends GetxController {
           .from('etablissements')
           .select('id, name')
           .order('name', ascending: true);
-      
+
       etablissements.value = (etablissementsResponse as List)
           .map((e) => {
                 'id': e['id']?.toString() ?? '',
@@ -90,7 +93,7 @@ class DashboardController extends GetxController {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       final monthStart = DateTime(now.year, now.month, 1);
-      
+
       // Récupérer l'ID de l'établissement sélectionné pour le filtre
       final etablissementIdFilter = selectedEtablissementId.value;
 
@@ -119,26 +122,29 @@ class DashboardController extends GetxController {
             .select('*, etablissement:etablissement_id(*)')
             .gte('created_at', filterStartDate.toIso8601String())
             .lte('created_at', filterEndDate.toIso8601String());
-        
+
         // Ajouter le filtre par établissement si sélectionné
         if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-          allOrdersQuery = allOrdersQuery.eq('etablissement_id', etablissementIdFilter);
+          allOrdersQuery =
+              allOrdersQuery.eq('etablissement_id', etablissementIdFilter);
         }
-        
-        final allOrdersResponse = await allOrdersQuery.order('created_at', ascending: false);
+
+        final allOrdersResponse =
+            await allOrdersQuery.order('created_at', ascending: false);
         allOrders = allOrdersResponse as List;
       } else {
         // Toutes les commandes sans filtre de dates personnalisé
-        var allOrdersQuery = _db
-            .from('orders')
-            .select('*, etablissement:etablissement_id(*)');
-        
+        var allOrdersQuery =
+            _db.from('orders').select('*, etablissement:etablissement_id(*)');
+
         // Ajouter le filtre par établissement si sélectionné
         if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-          allOrdersQuery = allOrdersQuery.eq('etablissement_id', etablissementIdFilter);
+          allOrdersQuery =
+              allOrdersQuery.eq('etablissement_id', etablissementIdFilter);
         }
-        
-        final allOrdersResponse = await allOrdersQuery.order('created_at', ascending: false);
+
+        final allOrdersResponse =
+            await allOrdersQuery.order('created_at', ascending: false);
         allOrders = allOrdersResponse as List;
       }
 
@@ -148,7 +154,8 @@ class DashboardController extends GetxController {
           .select('*')
           .gte('created_at', todayStart.toIso8601String());
       if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-        todayOrdersQuery = todayOrdersQuery.eq('etablissement_id', etablissementIdFilter);
+        todayOrdersQuery =
+            todayOrdersQuery.eq('etablissement_id', etablissementIdFilter);
       }
       final todayOrdersResponse = await todayOrdersQuery;
 
@@ -158,7 +165,8 @@ class DashboardController extends GetxController {
           .select('*')
           .gte('created_at', monthStart.toIso8601String());
       if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-        monthOrdersQuery = monthOrdersQuery.eq('etablissement_id', etablissementIdFilter);
+        monthOrdersQuery =
+            monthOrdersQuery.eq('etablissement_id', etablissementIdFilter);
       }
       final monthOrdersResponse = await monthOrdersQuery;
 
@@ -174,7 +182,8 @@ class DashboardController extends GetxController {
               DateTime(now.year, now.month, now.day, 23, 59, 59)
                   .toIso8601String());
       if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-        todayDeliveredOrdersQuery = todayDeliveredOrdersQuery.eq('etablissement_id', etablissementIdFilter);
+        todayDeliveredOrdersQuery = todayDeliveredOrdersQuery.eq(
+            'etablissement_id', etablissementIdFilter);
       }
       final todayDeliveredOrdersResponse = await todayDeliveredOrdersQuery;
 
@@ -221,11 +230,11 @@ class DashboardController extends GetxController {
       final totalEtablissements = (etablissementsResponse as List).length;
 
       // Statistiques des produits (filtrer par établissement si sélectionné)
-      var productsQuery = _db
-          .from('produits')
-          .select('id, quantite_stock, est_stockable');
+      var productsQuery =
+          _db.from('produits').select('id, quantite_stock, est_stockable');
       if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
-        productsQuery = productsQuery.eq('etablissement_id', etablissementIdFilter);
+        productsQuery =
+            productsQuery.eq('etablissement_id', etablissementIdFilter);
       }
       final productsResponse = await productsQuery;
       final products = productsResponse as List;
@@ -244,8 +253,9 @@ class DashboardController extends GetxController {
       // Note: getMostOrderedProducts ne supporte pas encore le filtre par établissement
       // On devra filtrer manuellement après récupération
       final topProductsRaw = await orderRepository.getMostOrderedProducts(
-          days: int.parse(selectedPeriod.value), limit: 20); // Récupérer plus pour filtrer
-      
+          days: int.parse(selectedPeriod.value),
+          limit: 20); // Récupérer plus pour filtrer
+
       // Filtrer par établissement si nécessaire
       List<Map<String, dynamic>> filteredTopProductsRaw = topProductsRaw;
       if (etablissementIdFilter != null && etablissementIdFilter.isNotEmpty) {
@@ -258,7 +268,7 @@ class DashboardController extends GetxController {
             .map((p) => p['id']?.toString() ?? '')
             .where((id) => id.isNotEmpty)
             .toSet();
-        
+
         filteredTopProductsRaw = topProductsRaw
             .where((p) {
               final productId = p['productId']?.toString() ?? '';
@@ -666,10 +676,12 @@ class DashboardController extends GetxController {
 
     for (var order in allOrders) {
       // Utiliser pickup_day si disponible, sinon utiliser created_at
-      String dayKey;
+      String? dayKey;
       if (order['pickup_day'] != null &&
           order['pickup_day'].toString().isNotEmpty) {
-        dayKey = order['pickup_day'].toString();
+        final pickupDay = order['pickup_day'].toString().trim();
+        // Normaliser le nom du jour pour correspondre aux noms français
+        dayKey = _normalizeDayName(pickupDay);
       } else if (order['pickup_date_time'] != null) {
         try {
           final pickupDate =
@@ -698,7 +710,15 @@ class DashboardController extends GetxController {
         continue;
       }
 
-      dayCounts[dayKey] = (dayCounts[dayKey] ?? 0) + 1;
+      if (dayKey.isNotEmpty) {
+        dayCounts[dayKey] = (dayCounts[dayKey] ?? 0) + 1;
+      }
+    }
+
+    // Si aucune donnée, retourner une liste vide
+    // (getOrdersByDayForChart s'occupera de retourner les 7 jours avec 0 commandes)
+    if (dayCounts.isEmpty) {
+      return [];
     }
 
     // Trier par nombre de commandes décroissant et prendre le top 7
@@ -712,6 +732,47 @@ class DashboardController extends GetxController {
               'count': entry.value,
             })
         .toList();
+  }
+
+  /// Normalise le nom du jour pour correspondre aux noms français standards
+  String _normalizeDayName(String dayName) {
+    final normalized = dayName.toLowerCase().trim();
+    switch (normalized) {
+      case 'lundi':
+      case 'monday':
+      case 'mon':
+        return 'Lundi';
+      case 'mardi':
+      case 'tuesday':
+      case 'tue':
+        return 'Mardi';
+      case 'mercredi':
+      case 'wednesday':
+      case 'wed':
+        return 'Mercredi';
+      case 'jeudi':
+      case 'thursday':
+      case 'thu':
+        return 'Jeudi';
+      case 'vendredi':
+      case 'friday':
+      case 'fri':
+        return 'Vendredi';
+      case 'samedi':
+      case 'saturday':
+      case 'sat':
+        return 'Samedi';
+      case 'dimanche':
+      case 'sunday':
+      case 'sun':
+        return 'Dimanche';
+      default:
+        // Si le nom ne correspond pas, essayer de le garder tel quel (première lettre en majuscule)
+        if (dayName.isNotEmpty) {
+          return dayName[0].toUpperCase() + dayName.substring(1).toLowerCase();
+        }
+        return dayName;
+    }
   }
 
   /// Calcule les heures de pickup les plus fréquentes
@@ -895,7 +956,8 @@ class DashboardController extends GetxController {
 
       // Si c'est un gérant, récupérer son établissement
       if (userRole == 'Gérant') {
-        final etab = await etablissementController.getEtablissementUtilisateurConnecte();
+        final etab =
+            await etablissementController.getEtablissementUtilisateurConnecte();
         if (etab != null) {
           etablissementId = etab.id.toString();
         }
@@ -935,16 +997,19 @@ class DashboardController extends GetxController {
               .eq('status', 'delivered')
               .not('delivery_date', 'is', null);
           if (etablissementId != null && etablissementId.isNotEmpty) {
-            firstOrderQuery = firstOrderQuery.eq('etablissement_id', etablissementId);
+            firstOrderQuery =
+                firstOrderQuery.eq('etablissement_id', etablissementId);
           }
           final firstOrderResponse = await firstOrderQuery
               .order('delivery_date', ascending: true)
               .limit(1);
           if (firstOrderResponse.isNotEmpty) {
             try {
-              startDate = DateTime.parse(firstOrderResponse[0]['delivery_date']);
+              startDate =
+                  DateTime.parse(firstOrderResponse[0]['delivery_date']);
             } catch (e) {
-              startDate = DateTime(now.year - 1, 1, 1); // Par défaut, 1 an en arrière
+              startDate =
+                  DateTime(now.year - 1, 1, 1); // Par défaut, 1 an en arrière
             }
           } else {
             startDate = DateTime(now.year - 1, 1, 1);
@@ -961,11 +1026,14 @@ class DashboardController extends GetxController {
         // Calcul par mois (pour année et toutes périodes)
         final currentMonth = DateTime(now.year, now.month, 1);
         DateTime monthStart = DateTime(startDate.year, startDate.month, 1);
-        
-        while (monthStart.isBefore(currentMonth) || monthStart.isAtSameMomentAs(currentMonth)) {
-          final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1).subtract(const Duration(days: 1));
-          final endOfMonth = DateTime(monthEnd.year, monthEnd.month, monthEnd.day, 23, 59, 59);
-          
+
+        while (monthStart.isBefore(currentMonth) ||
+            monthStart.isAtSameMomentAs(currentMonth)) {
+          final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1)
+              .subtract(const Duration(days: 1));
+          final endOfMonth =
+              DateTime(monthEnd.year, monthEnd.month, monthEnd.day, 23, 59, 59);
+
           var query = _db
               .from('orders')
               .select('total_amount, status, delivery_date')
@@ -979,15 +1047,21 @@ class DashboardController extends GetxController {
           }
 
           final orders = await query;
-          final monthRevenue = (orders as List).fold<double>(0.0,
-              (sum, o) => sum + ((o['total_amount'] as num?)?.toDouble() ?? 0.0));
-          
+          final monthRevenue = (orders as List).fold<double>(
+              0.0,
+              (sum, o) =>
+                  sum + ((o['total_amount'] as num?)?.toDouble() ?? 0.0));
+
           cumulativeRevenue += monthRevenue;
 
           revenueData.add({
-            'date': '${monthStart.year}-${monthStart.month.toString().padLeft(2, '0')}',
-            'revenue': cumulativeRevenue,
-            'periodRevenue': monthRevenue, // Revenu de la période (non cumulatif)
+            'date':
+                '${monthStart.year}-${monthStart.month.toString().padLeft(2, '0')}',
+            'revenue': monthRevenue, // Revenu de la période (non cumulatif)
+            'periodRevenue':
+                monthRevenue, // Revenu de la période (non cumulatif)
+            'cumulativeRevenue':
+                cumulativeRevenue, // Revenu cumulatif (pour référence si nécessaire)
           });
 
           // Passer au mois suivant
@@ -996,11 +1070,12 @@ class DashboardController extends GetxController {
       } else {
         // Calcul par jour (pour 7 jours, mois, 3 mois)
         final daysDiff = now.difference(startDate).inDays;
-        
+
         for (int i = daysDiff; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
           final startOfDay = DateTime(date.year, date.month, date.day);
-          final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+          final endOfDay =
+              DateTime(date.year, date.month, date.day, 23, 59, 59);
 
           var query = _db
               .from('orders')
@@ -1015,16 +1090,20 @@ class DashboardController extends GetxController {
           }
 
           final orders = await query;
-          final dayRevenue = (orders as List).fold<double>(0.0,
-              (sum, o) => sum + ((o['total_amount'] as num?)?.toDouble() ?? 0.0));
-          
+          final dayRevenue = (orders as List).fold<double>(
+              0.0,
+              (sum, o) =>
+                  sum + ((o['total_amount'] as num?)?.toDouble() ?? 0.0));
+
           cumulativeRevenue += dayRevenue;
 
           revenueData.add({
             'date':
                 '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
-            'revenue': cumulativeRevenue,
+            'revenue': dayRevenue, // Revenu de la période (non cumulatif)
             'periodRevenue': dayRevenue, // Revenu de la période (non cumulatif)
+            'cumulativeRevenue':
+                cumulativeRevenue, // Revenu cumulatif (pour référence si nécessaire)
           });
         }
       }
@@ -1078,6 +1157,7 @@ class DashboardController extends GetxController {
   }
 
   /// Récupère les commandes par jour de la semaine (format pour bar chart)
+  /// Retourne toujours les 7 jours de la semaine dans l'ordre, même si ordersByDay est vide
   List<Map<String, dynamic>> getOrdersByDayForChart(
       List<Map<String, dynamic>> ordersByDay) {
     // Les jours de la semaine dans l'ordre
@@ -1096,10 +1176,13 @@ class DashboardController extends GetxController {
     for (var order in ordersByDay) {
       final day = order['day'] as String? ?? '';
       final count = order['count'] as int? ?? 0;
-      ordersMap[day] = count;
+      if (day.isNotEmpty) {
+        ordersMap[day] = count;
+      }
     }
 
-    // Retourner dans l'ordre des jours de la semaine
+    // Toujours retourner les 7 jours de la semaine dans l'ordre
+    // même s'ils ont 0 commandes, pour que le graphique affiche tous les jours
     return weekDays.map((day) {
       return {
         'day': day,

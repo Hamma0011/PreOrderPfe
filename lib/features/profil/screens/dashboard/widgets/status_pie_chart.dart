@@ -177,8 +177,7 @@ class StatusPieChart extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    THelperFunctions.getStatusLabel(
-                                        entry.key as OrderStatus),
+                                    _getStatusLabel(entry.key),
                                     style: const TextStyle(fontSize: 12),
                                   ),
                                 ),
@@ -244,8 +243,7 @@ class StatusPieChart extends StatelessWidget {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                THelperFunctions.getStatusLabel(
-                                    entry.key as OrderStatus),
+                                _getStatusLabel(entry.key),
                                 style: const TextStyle(fontSize: 12),
                               ),
                             ),
@@ -269,5 +267,38 @@ class StatusPieChart extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Convertit une chaîne de statut en OrderStatus et retourne le label
+  String _getStatusLabel(String status) {
+    if (status.isEmpty) {
+      return 'Inconnu';
+    }
+
+    OrderStatus orderStatus;
+    switch (status.toLowerCase().trim()) {
+      case 'pending':
+        orderStatus = OrderStatus.pending;
+        break;
+      case 'preparing':
+        orderStatus = OrderStatus.preparing;
+        break;
+      case 'ready':
+        orderStatus = OrderStatus.ready;
+        break;
+      case 'delivered':
+        orderStatus = OrderStatus.delivered;
+        break;
+      case 'cancelled':
+        orderStatus = OrderStatus.cancelled;
+        break;
+      case 'refused':
+        orderStatus = OrderStatus.refused;
+        break;
+      default:
+        // Si le statut n'est pas reconnu, retourner 'pending' par défaut
+        orderStatus = OrderStatus.pending;
+    }
+    return THelperFunctions.getStatusLabel(orderStatus);
   }
 }

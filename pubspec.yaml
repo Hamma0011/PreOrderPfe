@@ -37,6 +37,7 @@ dependencies:
   get:
   get_storage:
   connectivity_plus:
+  path_provider:
 
   # Product Specific
   readmore:
