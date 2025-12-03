@@ -149,13 +149,7 @@ class ResearchController extends GetxController {
         case 'Nom A-Z':
           results.sort((a, b) => a.name.compareTo(b.name));
           break;
-        case 'Popularité':
-          results.sort((a, b) {
-            final aScore = a.isFeatured == true ? 1 : 0;
-            final bScore = b.isFeatured == true ? 1 : 0;
-            return bScore.compareTo(aScore);
-          });
-          break;
+
       }
     }
 

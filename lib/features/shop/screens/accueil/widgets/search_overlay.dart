@@ -434,7 +434,7 @@ class _SearchOverlayState extends State<SearchOverlay> {
                     ),
               ),
             ),
-            ...['Prix ↑', 'Prix ↓', 'Nom A-Z', 'Popularité'].map((sort) {
+            ...['Prix ↑', 'Prix ↓', 'Nom A-Z'].map((sort) {
               return DropdownMenuItem<String>(
                 value: sort,
                 child: Text(

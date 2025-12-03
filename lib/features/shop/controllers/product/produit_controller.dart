@@ -22,6 +22,7 @@ class ProduitController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
   RealtimeChannel? _productsChannel;
   RealtimeChannel? _featuredProductsChannel;
+  RealtimeChannel? _ordersChannel;
 
   // --- ÉTATS ET LISTES ---
   final _isLoading = false.obs;
@@ -41,6 +42,7 @@ class ProduitController extends GetxController {
     fetchFeaturedProducts();
     _subscribeToRealtimeProducts();
     _subscribeToRealtimeFeaturedProducts();
+    _subscribeToRealtimeOrders();
   }
 
   @override
@@ -579,6 +581,11 @@ class ProduitController extends GetxController {
             }
             allProducts.refresh();
             applyFilters();
+            final fIndex = featuredProducts.indexWhere((p) => p.id == produit.id);
+            if (fIndex != -1) {
+              featuredProducts[fIndex] = produit;
+              featuredProducts.refresh();
+            }
           } else if (eventType == PostgresChangeEvent.update) {
             var produit = ProduitModel.fromMap(newData);
             // Charger l'établissement si manquant
@@ -591,6 +598,11 @@ class ProduitController extends GetxController {
               allProducts[index] = produit;
               allProducts.refresh();
               applyFilters();
+              final fIndex = featuredProducts.indexWhere((p) => p.id == produit.id);
+              if (fIndex != -1) {
+                featuredProducts[fIndex] = produit;
+                featuredProducts.refresh();
+              }
             }
           } else if (eventType == PostgresChangeEvent.delete) {
             final id = oldData['id']?.toString();
@@ -598,6 +610,11 @@ class ProduitController extends GetxController {
               allProducts.removeWhere((p) => p.id == id);
               allProducts.refresh();
               applyFilters();
+              final hadItem = featuredProducts.any((p) => p.id == id);
+              featuredProducts.removeWhere((p) => p.id == id);
+              if (hadItem) {
+                featuredProducts.refresh();
+              }
             }
           }
         } catch (e) {
@@ -683,6 +700,25 @@ class ProduitController extends GetxController {
     _featuredProductsChannel!.subscribe();
   }
 
+  void _subscribeToRealtimeOrders() {
+    _ordersChannel = _supabase.channel('produit_controller_orders');
+
+    _ordersChannel!.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'orders',
+      callback: (payload) async {
+        try {
+          fetchFeaturedProducts();
+        } catch (e) {
+          debugPrint('Erreur traitement changement commandes temps réel: $e');
+        }
+      },
+    );
+
+    _ordersChannel!.subscribe();
+  }
+
   /// Désabonnement des subscriptions temps réel
   void _unsubscribeFromRealtime() {
     if (_productsChannel != null) {
@@ -692,6 +728,10 @@ class ProduitController extends GetxController {
     if (_featuredProductsChannel != null) {
       _supabase.removeChannel(_featuredProductsChannel!);
       _featuredProductsChannel = null;
+    }
+    if (_ordersChannel != null) {
+      _supabase.removeChannel(_ordersChannel!);
+      _ordersChannel = null;
     }
   }
 
