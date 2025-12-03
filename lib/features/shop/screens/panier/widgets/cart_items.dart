@@ -249,7 +249,7 @@ class TCartItems extends StatelessWidget {
 
       if (sizePrice != null) {
         // Select the variation first
-        variationController.selectVariation(sizePrice.size, sizePrice.price);
+        variationController.selectVariation(sizePrice);
 
         // Initialiser la quantité temporaire avec la quantité actuelle de l'article du panier
         // Cela garantit que les contrôles de quantité affichent la bonne valeur

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:caferesto/features/profil/controllers/user_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -1015,7 +1016,7 @@ class OrderController extends GetxController {
         // Récupérer le produit pour vérifier s'il est stockable
         final productResponse = await _db
             .from('produits')
-            .select('est_stockable, quantite_stock, nom')
+            .select('est_stockable, quantite_stock, nom, product_type, tailles_prix')
             .eq('id', item.productId)
             .single();
 
@@ -1026,18 +1027,52 @@ class OrderController extends GetxController {
           continue; // Produit non stockable, passer au suivant
         }
 
-        // Vérifier le stock disponible
+        final productType = productResponse['product_type']?.toString() ?? '';
         final currentStock =
             (productResponse['quantite_stock'] as num?)?.toInt() ?? 0;
-
         debugPrint(
-            '🔍 Produit: $productName, Stock actuel: $currentStock, Quantité demandée: ${item.quantity}');
+            '🔍 Produit: $productName, Type: $productType, Stock actuel: $currentStock, Quantité demandée: ${item.quantity}');
 
-        if (currentStock < item.quantity) {
-          final message = currentStock == 0
-              ? 'Le produit "$productName" est actuellement hors stock. Stock disponible: 0 article.'
-              : 'Stock insuffisant pour "$productName". Stock disponible: $currentStock article${currentStock > 1 ? 's' : ''}, quantité demandée: ${item.quantity} article${item.quantity > 1 ? 's' : ''}.';
-          throw Exception(message);
+        if (productType == 'variable' && item.variationId.isNotEmpty) {
+          // Vérifier le stock de la variante
+          final raw = productResponse['tailles_prix'];
+          List<dynamic> taillesList;
+          if (raw is String) {
+            taillesList = (json.decode(raw) as List).toList();
+          } else if (raw is List) {
+            taillesList = raw.toList();
+          } else {
+            taillesList = json.decode(json.encode(raw)) as List<dynamic>;
+          }
+          Map<String, dynamic>? found;
+          for (final e in taillesList) {
+            final m = Map<String, dynamic>.from(e as Map);
+            final taille = m['taille']?.toString() ?? '';
+            final id = m['id']?.toString() ?? '';
+            if (taille == item.variationId || id == item.variationId) {
+              found = m;
+              break;
+            }
+          }
+          final variantStock = found == null
+              ? 0
+              : (found['stock'] is num)
+                  ? (found['stock'] as num).toInt()
+                  : int.tryParse('${found['stock']}') ?? 0;
+          if (variantStock < item.quantity) {
+            final message = variantStock == 0
+                ? 'La variante sélectionnée est hors stock.'
+                : 'Stock insuffisant pour cette taille. Stock: $variantStock, demandé: ${item.quantity}.';
+            throw Exception(message);
+          }
+        } else {
+          // Produit simple stockable: vérifier le stock produit
+          if (currentStock < item.quantity) {
+            final message = currentStock == 0
+                ? 'Le produit "$productName" est actuellement hors stock. Stock disponible: 0 article.'
+                : 'Stock insuffisant pour "$productName". Stock disponible: $currentStock article${currentStock > 1 ? 's' : ''}, quantité demandée: ${item.quantity} article${item.quantity > 1 ? 's' : ''}.';
+            throw Exception(message);
+          }
         }
       } catch (e) {
         // Si c'est déjà une Exception avec un message, la relancer
@@ -1080,14 +1115,21 @@ class OrderController extends GetxController {
           continue; // Produit non stockable, passer au suivant
         }
 
-        // Pour tous les produits stockables (simples et variables), le stock est dans quantite_stock
-        final currentStock =
-            (productResponse['quantite_stock'] as num?)?.toInt() ?? 0;
-        debugPrint(
-            '📦 Stock actuel: $currentStock, quantité à soustraire: ${item.quantity}');
+        final productType = productResponse['product_type']?.toString() ?? '';
 
-        await produitRepository.updateProductStock(
-            item.productId, -item.quantity);
+        if (productType == 'variable' && item.variationId.isNotEmpty) {
+          debugPrint(
+              '📦 Mise à jour stock variante ${item.variationId} pour produit ${item.productId}');
+          await produitRepository.updateVariantStock(
+              item.productId, item.variationId, -item.quantity);
+        } else {
+          final currentStock =
+              (productResponse['quantite_stock'] as num?)?.toInt() ?? 0;
+          debugPrint(
+              '📦 Stock actuel: $currentStock, quantité à soustraire: ${item.quantity}');
+          await produitRepository.updateProductStock(
+              item.productId, -item.quantity);
+        }
         debugPrint('✅ Stock mis à jour pour produit ${item.productId}');
       } catch (e, stackTrace) {
         debugPrint(
@@ -1126,14 +1168,21 @@ class OrderController extends GetxController {
           continue; // Produit non stockable, passer au suivant
         }
 
-        // Pour tous les produits stockables (simples et variables), le stock est dans quantite_stock
-        final currentStock =
-            (productResponse['quantite_stock'] as num?)?.toInt() ?? 0;
-        debugPrint(
-            '📦 Stock actuel: $currentStock, quantité à ajouter: ${item.quantity}');
+        final productType = productResponse['product_type']?.toString() ?? '';
 
-        await produitRepository.updateProductStock(
-            item.productId, item.quantity);
+        if (productType == 'variable' && item.variationId.isNotEmpty) {
+          debugPrint(
+              '📦 Restauration stock variante ${item.variationId} pour produit ${item.productId}');
+          await produitRepository.updateVariantStock(
+              item.productId, item.variationId, item.quantity);
+        } else {
+          final currentStock =
+              (productResponse['quantite_stock'] as num?)?.toInt() ?? 0;
+          debugPrint(
+              '📦 Stock actuel: $currentStock, quantité à ajouter: ${item.quantity}');
+          await produitRepository.updateProductStock(
+              item.productId, item.quantity);
+        }
         debugPrint('✅ Stock restauré pour produit ${item.productId}');
       } catch (e, stackTrace) {
         debugPrint(

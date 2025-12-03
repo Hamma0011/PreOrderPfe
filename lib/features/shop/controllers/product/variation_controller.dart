@@ -14,15 +14,10 @@ class VariationController extends GetxController {
   RxString selectedSize = ''.obs;
   RxDouble selectedPrice = 0.0.obs;
 
-  void selectVariation(String size, double price) {
-    selectedSize.value = size;
-    selectedPrice.value = price;
-
-    // Create or update the variation map (matching CartItemModel structure)
-    selectedVariation.value = ProductSizePrice(
-      size: size,
-      price: price,
-    );
+  void selectVariation(ProductSizePrice sp) {
+    selectedSize.value = sp.size;
+    selectedPrice.value = sp.price;
+    selectedVariation.value = sp;
   }
 
   void clearVariation() {

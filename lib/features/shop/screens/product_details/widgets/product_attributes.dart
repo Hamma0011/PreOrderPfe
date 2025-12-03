@@ -95,7 +95,7 @@ class TProductAttributes extends StatelessWidget {
                 onSelected: (bool selected) {
                   // Select or deselect variation
                   if (selected) {
-                    variationController.selectVariation(sp.size, sp.price);
+                    variationController.selectVariation(sp);
                     // Si cette variation est déjà dans le panier, on permet quand même de la sélectionner
                     // pour permettre d'ajouter plus de cette taille ou de la modifier
                   } else {

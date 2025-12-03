@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -289,6 +290,82 @@ class ProduitRepository extends GetxController {
       debugPrint('❌ Erreur lors de la mise à jour du stock: $e');
       debugPrint('Stack trace: $stackTrace');
       throw 'Erreur lors de la mise à jour du stock : $e';
+    }
+  }
+
+  /// Mettre à jour le stock d'une variante (tailles_prix) et synchroniser quantite_stock
+  Future<void> updateVariantStock(
+      String productId, String variationIdOrSize, int quantityChange) async {
+    try {
+      debugPrint(
+          '📦 updateVariantStock appelé pour $productId / $variationIdOrSize avec changement: $quantityChange');
+
+      // Récupérer les champs nécessaires
+      final product = await _db
+          .from(_table)
+          .select('est_stockable, product_type, quantite_stock, tailles_prix')
+          .eq('id', productId)
+          .single();
+
+      final isStockable = product['est_stockable'] as bool? ?? false;
+      final productType = product['product_type']?.toString() ?? '';
+      if (!isStockable || productType != 'variable') {
+        debugPrint('📦 Produit non stockable ou non variable, fallback produit');
+        await updateProductStock(productId, quantityChange);
+        return;
+      }
+
+      // Parser tailles_prix
+      final taillesPrixRaw = product['tailles_prix'];
+      List<dynamic> taillesList;
+      if (taillesPrixRaw is String) {
+        taillesList = (json.decode(taillesPrixRaw) as List).toList();
+      } else if (taillesPrixRaw is List) {
+        taillesList = taillesPrixRaw.toList();
+      } else {
+        taillesList = json.decode(json.encode(taillesPrixRaw)) as List<dynamic>;
+      }
+
+      bool found = false;
+      int totalStock = 0;
+      for (int i = 0; i < taillesList.length; i++) {
+        final m = Map<String, dynamic>.from(taillesList[i] as Map);
+        final taille = m['taille']?.toString() ?? '';
+        final id = m['id']?.toString() ?? '';
+        final current = (m['stock'] is num) ? (m['stock'] as num).toInt() : int.tryParse('${m['stock']}') ?? 0;
+        if (!found && (taille == variationIdOrSize || id == variationIdOrSize)) {
+          final newVal = current + quantityChange;
+          m['stock'] = newVal < 0 ? 0 : newVal;
+          taillesList[i] = m;
+          found = true;
+        }
+        totalStock += (m['stock'] is num)
+            ? (m['stock'] as num).toInt()
+            : int.tryParse('${m['stock']}') ?? 0;
+      }
+
+      if (!found) {
+        debugPrint('❌ Variation non trouvée pour $variationIdOrSize');
+        // Fallback: ne pas lever erreur, mais au moins mettre à jour produit
+        await updateProductStock(productId, quantityChange);
+        return;
+      }
+
+      // Mettre à jour tailles_prix et quantite_stock
+      final updatedJson = json.encode(taillesList);
+      final response = await _db
+          .from(_table)
+          .update({'tailles_prix': updatedJson, 'quantite_stock': totalStock})
+          .eq('id', productId)
+          .select();
+      debugPrint('📦 Variante mise à jour. Nouveau total stock: $totalStock. Réponse: $response');
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Erreur Postgres updateVariantStock: ${e.code} - ${e.message}');
+      throw 'Erreur base de données : ${e.code} - ${e.message}';
+    } catch (e, stackTrace) {
+      debugPrint('❌ Erreur updateVariantStock: $e');
+      debugPrint('Stack trace: $stackTrace');
+      throw 'Erreur lors de la mise à jour du stock de la variante : $e';
     }
   }
 

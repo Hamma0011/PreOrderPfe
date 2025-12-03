@@ -335,22 +335,29 @@ class ProduitModel {
 }
 
 class ProductSizePrice {
+  final String id;
   final String size;
   final double price;
+  final int stock;
 
   ProductSizePrice({
+    required this.id,
     required this.size,
     required this.price,
+    this.stock = 0,
   });
 
   factory ProductSizePrice.fromMap(Map<String, dynamic> map) {
     return ProductSizePrice(
+      id: (map['id']?.toString().isNotEmpty ?? false)
+          ? map['id'].toString()
+          : '${DateTime.now().millisecondsSinceEpoch}',
       size: map['taille']?.toString() ?? '',
       price: _parsePrice(map['prix']),
+      stock: _parseInt(map['stock']),
     );
   }
 
-  /// Helper function pour parser le prix de manière sécurisée
   static double _parsePrice(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -358,13 +365,20 @@ class ProductSizePrice {
     if (value is String) {
       return double.tryParse(value) ?? 0.0;
     }
-    // Si c'est un num, essayer de convertir
     if (value is num) return value.toDouble();
     return 0.0;
   }
 
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is num) return value.toInt();
+    return 0;
+  }
+
   Map<String, dynamic> toMap() {
-    return {'taille': size, 'prix': price};
+    return {'id': id, 'taille': size, 'prix': price, 'stock': stock};
   }
 
   factory ProductSizePrice.fromJson(String source) =>
@@ -372,19 +386,27 @@ class ProductSizePrice {
 
   String toJson() => json.encode(toMap());
 
-  ProductSizePrice copyWith({String? size, double? price}) {
+  ProductSizePrice copyWith({String? id, String? size, double? price, int? stock}) {
     return ProductSizePrice(
-        size: size ?? this.size, price: price ?? this.price);
+      id: id ?? this.id,
+      size: size ?? this.size,
+      price: price ?? this.price,
+      stock: stock ?? this.stock,
+    );
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ProductSizePrice && other.size == size && other.price == price);
+      (other is ProductSizePrice &&
+          other.id == id &&
+          other.size == size &&
+          other.price == price &&
+          other.stock == stock);
 
   @override
-  int get hashCode => Object.hash(size, price);
+  int get hashCode => Object.hash(id, size, price, stock);
 
   @override
-  String toString() => 'ProductSizePrice(taille: $size, prix: $price)';
+  String toString() => 'ProductSizePrice(id: $id, taille: $size, prix: $price, stock: $stock)';
 }

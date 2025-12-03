@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -52,6 +53,46 @@ class PanierController extends GetxController {
     }
   }
 
+  /// Vérifie le stock disponible d'une variation spécifique depuis la base de données
+  Future<int> obtenirStockDisponibleVariation(String productId, String variationId) async {
+    try {
+      final productResponse = await _db
+          .from('produits')
+          .select('product_type, est_stockable, tailles_prix')
+          .eq('id', productId)
+          .single();
+
+      final isStockable = productResponse['est_stockable'] as bool? ?? false;
+      final productType = productResponse['product_type']?.toString() ?? '';
+      if (!isStockable || productType != 'variable') return 999999;
+
+      final raw = productResponse['tailles_prix'];
+      List<dynamic> taillesList;
+      if (raw is String) {
+        taillesList = (json.decode(raw) as List).toList();
+      } else if (raw is List) {
+        taillesList = raw.toList();
+      } else {
+        taillesList = json.decode(json.encode(raw)) as List<dynamic>;
+      }
+      for (final e in taillesList) {
+        final m = Map<String, dynamic>.from(e as Map);
+        final taille = m['taille']?.toString() ?? '';
+        final id = m['id']?.toString() ?? '';
+        if (taille == variationId || id == variationId) {
+          final current = (m['stock'] is num)
+              ? (m['stock'] as num).toInt()
+              : int.tryParse('${m['stock']}') ?? 0;
+          return current;
+        }
+      }
+      return 0;
+    } catch (e) {
+      debugPrint('Erreur lors de la récupération du stock variation: $e');
+      return 0;
+    }
+  }
+
   /// Vérifie si la quantité demandée est disponible en stock
   Future<bool> verifierStockDisponible(
       String productId, int quantiteDemandee) async {
@@ -81,8 +122,11 @@ class PanierController extends GetxController {
   void mettreAJourVariation(String productId, String newSize, double newPrice) {
     int index = cartItems.indexWhere((item) => item.productId == productId);
     if (index >= 0) {
+      final produit = cartItems[index].product;
+      final sp = produit?.sizesPrices.firstWhereOrNull((e) => e.size == newSize);
       cartItems[index] = cartItems[index].copyWith(
-        selectedVariation: ProductSizePrice(size: newSize, price: newPrice),
+        selectedVariation:
+            sp ?? ProductSizePrice(id: '${DateTime.now().millisecondsSinceEpoch}', size: newSize, price: newPrice, stock: 0),
         price: newPrice,
       );
     }
@@ -256,21 +300,37 @@ class PanierController extends GetxController {
     final quantityToAdd = quantity > 0 ? quantity : 1;
 
     // Vérifier le stock disponible depuis la base de données
-    final stockDisponible = await obtenirStockDisponible(product.id);
-
-    // Si le produit est stockable, vérifier le stock
     if (product.isStockable) {
-      final quantiteDansPanier = obtenirQuantiteProduitDansPanier(product.id);
-      final quantiteTotale = quantiteDansPanier + quantityToAdd;
-
-      if (quantiteTotale > stockDisponible) {
-        TLoaders.errorSnackBar(
-          title: 'Stock insuffisant',
-          message: stockDisponible == 0
-              ? 'Stock disponible: 0 article. Ce produit est actuellement hors stock.'
-              : 'Stock disponible: $stockDisponible article${stockDisponible > 1 ? 's' : ''}. Vous avez déjà $quantiteDansPanier dans votre panier. Quantité demandée: $quantityToAdd.',
-        );
-        return;
+      if (product.isVariable) {
+        final variation = variationController.selectedVariation.value;
+        final variationId = variation?.size ?? '';
+        final stockDisponibleVar =
+            await obtenirStockDisponibleVariation(product.id, variationId);
+        final quantiteDansPanierVar =
+            obtenirQuantiteVariationDansPanier(product.id, variationId);
+        final quantiteTotaleVar = quantiteDansPanierVar + quantityToAdd;
+        if (quantiteTotaleVar > stockDisponibleVar) {
+          TLoaders.errorSnackBar(
+            title: 'Stock insuffisant',
+            message: stockDisponibleVar == 0
+                ? 'Cette taille est hors stock.'
+                : 'Stock disponible pour cette taille: $stockDisponibleVar. Vous avez déjà $quantiteDansPanierVar dans votre panier. Quantité demandée: $quantityToAdd.',
+          );
+          return;
+        }
+      } else {
+        final stockDisponible = await obtenirStockDisponible(product.id);
+        final quantiteDansPanier = obtenirQuantiteProduitDansPanier(product.id);
+        final quantiteTotale = quantiteDansPanier + quantityToAdd;
+        if (quantiteTotale > stockDisponible) {
+          TLoaders.errorSnackBar(
+            title: 'Stock insuffisant',
+            message: stockDisponible == 0
+                ? 'Stock disponible: 0 article. Ce produit est actuellement hors stock.'
+                : 'Stock disponible: $stockDisponible article${stockDisponible > 1 ? 's' : ''}. Vous avez déjà $quantiteDansPanier dans votre panier. Quantité demandée: $quantityToAdd.',
+          );
+          return;
+        }
       }
     }
 
@@ -346,18 +406,32 @@ class PanierController extends GetxController {
       // Vérifier le stock avant d'augmenter la quantité
       final product = item.product;
       if (product != null && product.isStockable) {
-        final stockDisponible = await obtenirStockDisponible(item.productId);
         final quantiteActuelle = cartItems[index].quantity;
         final nouvelleQuantite = quantiteActuelle + 1;
-
-        if (nouvelleQuantite > stockDisponible) {
-          TLoaders.errorSnackBar(
-            title: 'Stock insuffisant',
-            message: stockDisponible == 0
-                ? 'Stock disponible: 0 article. Ce produit est actuellement hors stock.'
-                : 'Stock disponible: $stockDisponible article${stockDisponible > 1 ? 's' : ''}. Vous avez déjà $quantiteActuelle dans votre panier. Quantité demandée: $nouvelleQuantite.',
-          );
-          return;
+        if (product.isVariable) {
+          final variationId = cartItems[index].variationId;
+          final stockDisponibleVar =
+              await obtenirStockDisponibleVariation(item.productId, variationId);
+          if (nouvelleQuantite > stockDisponibleVar) {
+            TLoaders.errorSnackBar(
+              title: 'Stock insuffisant',
+              message: stockDisponibleVar == 0
+                  ? 'Cette taille est hors stock.'
+                  : 'Stock disponible pour cette taille: $stockDisponibleVar. Vous avez déjà $quantiteActuelle dans votre panier. Quantité demandée: $nouvelleQuantite.',
+            );
+            return;
+          }
+        } else {
+          final stockDisponible = await obtenirStockDisponible(item.productId);
+          if (nouvelleQuantite > stockDisponible) {
+            TLoaders.errorSnackBar(
+              title: 'Stock insuffisant',
+              message: stockDisponible == 0
+                  ? 'Stock disponible: 0 article. Ce produit est actuellement hors stock.'
+                  : 'Stock disponible: $stockDisponible article${stockDisponible > 1 ? 's' : ''}. Vous avez déjà $quantiteActuelle dans votre panier. Quantité demandée: $nouvelleQuantite.',
+            );
+            return;
+          }
         }
       }
 

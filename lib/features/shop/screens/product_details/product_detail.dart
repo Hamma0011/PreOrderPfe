@@ -42,8 +42,7 @@ class ProductDetailScreen extends StatelessWidget {
           );
           if (sizePrice != null) {
             // Select the variation
-            variationController.selectVariation(
-                sizePrice.size, sizePrice.price);
+            variationController.selectVariation(sizePrice);
 
             // Initialize temp quantity with the current cart item's quantity if not already set
             // This ensures quantity controls show the correct value

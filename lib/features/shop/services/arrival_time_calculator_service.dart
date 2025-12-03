@@ -10,9 +10,9 @@ import 'package:geolocator/geolocator.dart';
 enum GraphHopperVehicle {
   car('car', 'Voiture'),
   foot('foot', 'À pied'),
-  bike('bike', 'Vélo'),
+  bike('bike', 'Vélo');
 
-  scooter('scooter', 'Scooter');
+  //scooter('scooter', 'Scooter');
 
   final String value;
   final String label;

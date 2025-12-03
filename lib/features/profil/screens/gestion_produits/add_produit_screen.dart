@@ -45,6 +45,7 @@ class _AddProduitScreenState extends State<AddProduitScreen>
   final _prixPromoController = TextEditingController();
   final _tailleController = TextEditingController();
   final _prixTailleController = TextEditingController();
+  final _stockTailleController = TextEditingController();
 
   String? _selectedCategorieId;
   final List<ProductSizePrice> _taillesPrix = [];
@@ -85,6 +86,7 @@ class _AddProduitScreenState extends State<AddProduitScreen>
     _prixPromoController.dispose();
     _tailleController.dispose();
     _prixTailleController.dispose();
+    _stockTailleController.dispose();
     super.dispose();
   }
 
@@ -380,6 +382,18 @@ class _AddProduitScreenState extends State<AddProduitScreen>
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
             ),
+            if (_estStockable)
+              SizedBox(
+                width: fieldWidth,
+                child: TextFormField(
+                  readOnly: isAdmin ? true : false,
+                  controller: _stockTailleController,
+                  decoration: const InputDecoration(
+                      labelText: 'Stock de la taille',
+                      border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
             ElevatedButton.icon(
               icon: Icon(
                   _editingIndex != null ? Iconsax.save_2 : Icons.add_circle),
@@ -387,20 +401,32 @@ class _AddProduitScreenState extends State<AddProduitScreen>
               onPressed: () {
                 final t = _tailleController.text.trim();
                 final p = double.tryParse(_prixTailleController.text) ?? 0;
-                if (t.isEmpty || p <= 0) {
+                final s = int.tryParse(_stockTailleController.text) ?? 0;
+                if (t.isEmpty || p <= 0 || (_estStockable && s < 0)) {
                   TLoaders.errorSnackBar(message: 'Taille ou prix invalide');
                   return;
                 }
                 setState(() {
                   if (_editingIndex != null) {
-                    _taillesPrix[_editingIndex!] =
-                        ProductSizePrice(size: t, price: p);
+                    final old = _taillesPrix[_editingIndex!];
+                    _taillesPrix[_editingIndex!] = ProductSizePrice(
+                      id: old.id,
+                      size: t,
+                      price: p,
+                      stock: _estStockable ? s : old.stock,
+                    );
                     _editingIndex = null;
                   } else {
-                    _taillesPrix.add(ProductSizePrice(size: t, price: p));
+                    _taillesPrix.add(ProductSizePrice(
+                      id: '${DateTime.now().millisecondsSinceEpoch}',
+                      size: t,
+                      price: p,
+                      stock: _estStockable ? s : 0,
+                    ));
                   }
                   _tailleController.clear();
                   _prixTailleController.clear();
+                  _stockTailleController.clear();
                 });
               },
             )
@@ -422,13 +448,16 @@ class _AddProduitScreenState extends State<AddProduitScreen>
                     border: Border.all(color: Colors.grey.shade300),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text('${tp.size} - ${tp.price} DT'),
+                    Text('${tp.size} - ${tp.price} DT${_estStockable ? ' • Stock: ${tp.stock}' : ''}'),
                     IconButton(
                         icon: const Icon(Icons.edit, size: 18),
                         onPressed: () {
                           setState(() {
                             _tailleController.text = tp.size;
                             _prixTailleController.text = tp.price.toString();
+                            if (_estStockable) {
+                              _stockTailleController.text = tp.stock.toString();
+                            }
                             _editingIndex = i;
                           });
                           FocusScope.of(context).requestFocus(_tailleFocusNode);
@@ -453,7 +482,7 @@ class _AddProduitScreenState extends State<AddProduitScreen>
         onChanged:
             widget.isAdmin ? null : (v) => setState(() => _estStockable = v),
       ),
-      if (_estStockable)
+      if (_estStockable && _productType == ProductType.single)
         TextFormField(
           readOnly: isAdmin ? true : false,
           controller: _quantiteStockController,
@@ -600,8 +629,11 @@ class _AddProduitScreenState extends State<AddProduitScreen>
       preparationTime: int.tryParse(_tempsPreparationController.text) ?? 0,
       etablissementId: etabId ?? '',
       isStockable: _estStockable,
-      stockQuantity:
-          _estStockable ? int.tryParse(_quantiteStockController.text) ?? 0 : 0,
+      stockQuantity: _estStockable
+          ? (_productType == ProductType.variable
+              ? _taillesPrix.fold<int>(0, (sum, e) => sum + (e.stock))
+              : int.tryParse(_quantiteStockController.text) ?? 0)
+          : 0,
       price: _productType == ProductType.single
           ? double.tryParse(_prixController.text) ?? 0
           : 0,
