@@ -601,8 +601,9 @@ class _GerantOrderManagementScreenState
       return const SizedBox.shrink();
     }
 
-    // Afficher tous les articles commandés
-    final displayItems = order.items;
+    // Afficher les 2 premiers articles + compteur si plus
+    final displayItems = order.items.take(2).toList();
+    final remainingCount = order.items.length > 2 ? order.items.length - 2 : 0;
 
     return Container(
       margin: const EdgeInsets.only(top: 6),
@@ -705,7 +706,7 @@ class _GerantOrderManagementScreenState
                           color: Colors.grey.shade800,
                         ),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                        maxLines: 1,
                       ),
                     ),
                     Text(

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../../utils/constants/colors.dart';
 import '../../../../../utils/helpers/helper_functions.dart';
 import '../../../../shop/controllers/banner_controller.dart';
 import '../../../controllers/user_controller.dart';
@@ -39,29 +38,29 @@ class BuildTypeLien extends StatelessWidget {
               labelText: 'Type de lien',
               prefixIcon: const Icon(Iconsax.link),
               filled: isAdminView,
+              labelStyle:
+                  TextStyle(color: dark ? Colors.white : Colors.black),
             ),
-            items: [
-              DropdownMenuItem(
-                  value: null,
-                  child: Text(
-                    'Aucun lien',
-                    style: TextStyle(
-                        color: dark ? Colors.white : TColors.eerieBlack),
-                  )),
-              DropdownMenuItem(
-                  value: 'product',
-                  child: Text(
-                    'Produit',
-                    style: TextStyle(
-                        color: dark ? Colors.white : TColors.eerieBlack),
-                  )),
+            style: TextStyle(color: dark ? Colors.white : Colors.black),
+            selectedItemBuilder: (context) {
+              final itemsLabels = const ['Aucun lien', 'Produit', 'Établissement'];
+              return itemsLabels
+                  .map((label) => Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                              color: dark ? Colors.white : Colors.black),
+                        ),
+                      ))
+                  .toList();
+            },
+            items: const [
+              DropdownMenuItem(value: null, child: Text('Aucun lien')),
+              DropdownMenuItem(value: 'product', child: Text('Produit')),
               DropdownMenuItem(
                 value: 'establishment',
-                child: Text(
-                  'Établissement',
-                  style: TextStyle(
-                      color: dark ? Colors.white : TColors.eerieBlack),
-                ),
+                child: Text('Établissement'),
               ),
             ],
             onChanged: isAdminView

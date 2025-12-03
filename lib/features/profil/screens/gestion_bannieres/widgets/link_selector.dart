@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../utils/helpers/helper_functions.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../shop/controllers/banner_controller.dart';
@@ -15,6 +16,7 @@ class LinkSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = THelperFunctions.isDarkMode(context);
     return Obx(() {
       final linkType = controller.selectedLinkType.value;
       if (linkType.isEmpty) return const SizedBox.shrink();
@@ -39,7 +41,22 @@ class LinkSelector extends StatelessWidget {
             labelText: 'Sélectionner un produit',
             prefixIcon: Icon(Iconsax.shop),
             filled: isAdminView,
+            labelStyle:
+                TextStyle(color: isDark ? Colors.white : Colors.black),
           ),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          selectedItemBuilder: (context) {
+            return products
+                .map((product) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        product.name,
+                        style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black),
+                      ),
+                    ))
+                .toList();
+          },
           items: products.map((product) {
             return DropdownMenuItem(
               value: product.id,
@@ -135,10 +152,26 @@ class LinkSelector extends StatelessWidget {
         // Pour l'admin, ne pas permettre la sélection
         return DropdownButtonFormField<String>(
           value: isValidValue ? selectedValue : null,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Sélectionner un établissement',
-            prefixIcon: Icon(Iconsax.home),
+            prefixIcon: const Icon(Iconsax.home),
+            filled: isAdminView,
+            labelStyle:
+                TextStyle(color: isDark ? Colors.white : Colors.black),
           ),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          selectedItemBuilder: (context) {
+            return establishments
+                .map((establishment) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        establishment.name,
+                        style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black),
+                      ),
+                    ))
+                .toList();
+          },
           items: establishments.map((establishment) {
             return DropdownMenuItem(
               value: establishment.id!,
