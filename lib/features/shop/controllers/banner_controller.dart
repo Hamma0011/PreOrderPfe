@@ -257,12 +257,32 @@ class BannerController extends GetxController {
         return;
       }
 
-      // Forcer l'association à l'établissement du gérant
       if (isGerant) {
         final gerantEtablissement = await etablissementController.getEtablissementUtilisateurConnecte();
         if (gerantEtablissement != null && (gerantEtablissement.id?.isNotEmpty ?? false)) {
-          selectedLinkType.value = 'establishment';
-          selectedLinkId.value = gerantEtablissement.id!;
+          if (selectedLinkType.value == 'establishment') {
+            if (selectedLinkId.value.isEmpty || selectedLinkId.value != gerantEtablissement.id) {
+              selectedLinkId.value = gerantEtablissement.id!;
+            }
+          } else if (selectedLinkType.value == 'product') {
+            if (selectedLinkId.value.isEmpty) {
+              TLoaders.warningSnackBar(title: 'Lien produit manquant', message: 'Veuillez sélectionner un produit');
+              isLoading.value = false;
+              return;
+            }
+            try {
+              final produit = await produitRepository.getProductById(selectedLinkId.value);
+              if (produit == null || produit.etablissementId != gerantEtablissement.id) {
+                TLoaders.errorSnackBar(title: 'Produit invalide', message: 'Ce produit n\'appartient pas à votre établissement');
+                isLoading.value = false;
+                return;
+              }
+            } catch (e) {
+              TLoaders.errorSnackBar(title: 'Erreur', message: e.toString());
+              isLoading.value = false;
+              return;
+            }
+          }
         }
       }
 

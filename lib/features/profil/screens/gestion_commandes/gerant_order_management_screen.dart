@@ -154,13 +154,17 @@ class _GerantOrderManagementScreenState
         filteredOrders = ordersToFilter;
     }
 
-    // Apply search filter
+    // Apply search filter by order code (codeRetrait or ID prefix)
     if (_searchQuery.isNotEmpty) {
-      filteredOrders = filteredOrders
-          .where((order) =>
-              order.id.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              order.totalAmount.toString().contains(_searchQuery))
-          .toList();
+      final q = _searchQuery.trim().toLowerCase();
+      filteredOrders = filteredOrders.where((order) {
+        final code = (order.codeRetrait != null && order.codeRetrait!.isNotEmpty)
+            ? order.codeRetrait!
+            : (order.id.isNotEmpty && order.id.length >= 8
+                ? order.id.substring(0, 8)
+                : order.id);
+        return code.toLowerCase().contains(q);
+      }).toList();
     }
 
     return filteredOrders;
@@ -222,7 +226,7 @@ class _GerantOrderManagementScreenState
             padding: const EdgeInsets.all(AppSizes.defaultSpace),
             // FIXED: Use the enhanced TSearchContainer with controller
             child: TSearchContainer(
-              text: 'Rechercher une commande...',
+              text: 'Rechercher par code de commande...',
               controller: _searchController,
               onChanged: (value) {
                 setState(() {

@@ -37,8 +37,7 @@ class TSortableProducts extends StatelessWidget {
                 'Prix croissant',
                 'Prix décroissant',
                 'Récent',
-                'Ventes',
-              ]
+             ]
                   .map((option) =>
                       DropdownMenuItem(value: option, child: Text(option)))
                   .toList(),

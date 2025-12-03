@@ -124,27 +124,20 @@ class ProduitController extends GetxController {
         break;
       case 'Prix croissant':
         featuredProducts.sort((a, b) {
-          final priceA = a.salePrice > 0 ? a.salePrice : a.price;
-          final priceB = b.salePrice > 0 ? b.salePrice : b.price;
+          final priceA = a.minPrice > 0 ? a.minPrice : a.minPrice;
+          final priceB = b.minPrice > 0 ? b.minPrice : b.minPrice;
           return priceA.compareTo(priceB);
         });
         break;
       case 'Prix décroissant':
         featuredProducts.sort((a, b) {
-          final priceA = a.salePrice > 0 ? a.salePrice : a.price;
-          final priceB = b.salePrice > 0 ? b.salePrice : b.price;
+          final priceA = a.minPrice > 0 ? a.minPrice : a.minPrice;
+          final priceB = b.minPrice > 0 ? b.minPrice : b.minPrice;
           return priceB.compareTo(priceA);
         });
         break;
       case 'Récent':
         featuredProducts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-      case 'Ventes':
-        featuredProducts.sort((a, b) {
-          final salesA = a.salePrice;
-          final salesB = b.salePrice;
-          return salesB.compareTo(salesA);
-        });
         break;
       default:
         featuredProducts.sort((a, b) => a.name.compareTo(b.name));

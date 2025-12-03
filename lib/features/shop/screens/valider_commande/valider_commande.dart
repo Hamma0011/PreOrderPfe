@@ -30,6 +30,7 @@ class ValiderCommandeScreen extends StatelessWidget {
     } catch (e) {
       Get.put(UserController(), permanent: true);
     }
+    final userController = Get.find<UserController>();
     final subTotal = panierController.totalCartPrice.value;
     // Use instance getter which handles creation if needed
     final orderController = Get.find<OrderController>();
@@ -83,13 +84,17 @@ class ValiderCommandeScreen extends StatelessWidget {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(AppSizes.defaultSpace),
         child: ElevatedButton(
-            onPressed: subTotal > 0
-                ? () => _processOrder(orderController, totalAmount, context)
-                : () => TLoaders.warningSnackBar(
-                    title: 'Panier vide',
-                    message:
-                        'Veuillez ajouter des produits au panier pour proceder au paiement'),
-            child: const Text('Commander')),
+            onPressed: userController.userRole == 'Client'
+                ? (subTotal > 0
+                    ? () => _processOrder(orderController, totalAmount, context)
+                    : () => TLoaders.warningSnackBar(
+                        title: 'Panier vide',
+                        message:
+                            'Veuillez ajouter des produits au panier pour proceder au paiement'))
+                : null,
+            child: Text(userController.userRole == 'Client'
+                ? 'Commander'
+                : 'Commander (seulement pour client)')),
       ),
     );
   }
