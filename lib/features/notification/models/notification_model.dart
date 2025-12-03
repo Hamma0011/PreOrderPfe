@@ -24,7 +24,7 @@ class NotificationModel {
       title: json['title'],
       message: json['message'],
       read: json['read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: DateTime.parse(json['created_at']).toLocal(),
       etablissementId: json['etablissement_id'],
     );
   }

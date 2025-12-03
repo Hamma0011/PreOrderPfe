@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
@@ -5,8 +6,8 @@ import '../../../../utils/constants/colors.dart';
 import '../../../../utils/constants/sizes.dart';
 import '../../models/notification_model.dart';
 
-class NotificationItem extends StatelessWidget {
-  const NotificationItem({super.key, 
+class NotificationItem extends StatefulWidget {
+  const NotificationItem({super.key,
     required this.notification,
     required this.dark,
     required this.onTap,
@@ -16,25 +17,47 @@ class NotificationItem extends StatelessWidget {
   final bool dark;
   final VoidCallback onTap;
 
+  @override
+  State<NotificationItem> createState() => _NotificationItemState();
+}
+
+class _NotificationItemState extends State<NotificationItem> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   String _getTimeAgo(DateTime dateTime) {
+    final localDate = dateTime.toLocal();
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final difference = now.difference(localDate);
 
     if (difference.inDays > 7) {
-      return DateFormat('dd MMM yyyy', 'fr').format(dateTime);
+      return DateFormat('dd MMM yyyy', 'fr').format(localDate);
     } else if (difference.inDays > 0) {
       return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
     } else if (difference.inHours > 0) {
-      return 'Il y a ${difference.inHours} heure${difference.inHours > 1 ? 's' : ''}';
+      return 'Il y a ${difference.inHours} h';
     } else if (difference.inMinutes > 0) {
-      return 'Il y a ${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''}';
+      return 'Il y a ${difference.inMinutes} min';
     } else {
       return 'À l\'instant';
     }
   }
 
   IconData _getNotificationIcon() {
-    final title = notification.title.toLowerCase();
+    final title = widget.notification.title.toLowerCase();
     if (title.contains('établissement') || title.contains('statut')) {
       return Iconsax.buildings;
     } else if (title.contains('commande') || title.contains('order')) {
@@ -51,7 +74,7 @@ class NotificationItem extends StatelessWidget {
   }
 
   Color _getIconColor() {
-    final title = notification.title.toLowerCase();
+    final title = widget.notification.title.toLowerCase();
     if (title.contains('approuvé') || title.contains('accepté')) {
       return TColors.success;
     } else if (title.contains('rejeté') || title.contains('refusé')) {
@@ -59,29 +82,29 @@ class NotificationItem extends StatelessWidget {
     } else if (title.contains('commande')) {
       return TColors.primary;
     } else {
-      return notification.read
-          ? (dark ? Colors.grey.shade600 : Colors.grey.shade400)
+      return widget.notification.read
+          ? (widget.dark ? Colors.grey.shade600 : Colors.grey.shade400)
           : TColors.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isRead = notification.read;
+    final isRead = widget.notification.read;
     final iconColor = _getIconColor();
     final icon = _getNotificationIcon();
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(AppSizes.borderRadiusLg),
         child: Container(
           padding: const EdgeInsets.all(AppSizes.md),
           decoration: BoxDecoration(
-            color: dark
+            color: widget.dark
                 ? (isRead
-                    ? TColors.darkContainer
+                ? TColors.darkContainer
                     : TColors.primary.withValues(alpha: 0.15))
                 : (isRead
                     ? TColors.white
@@ -90,7 +113,7 @@ class NotificationItem extends StatelessWidget {
             border: Border.all(
               color: isRead
                   ? Colors.transparent
-                  : (dark
+                  : (widget.dark
                       ? TColors.primary.withValues(alpha: 0.4)
                       : TColors.primary.withValues(alpha: 0.3)),
               width: isRead ? 0 : 1.5,
@@ -129,10 +152,10 @@ class NotificationItem extends StatelessWidget {
                       end: Alignment.bottomRight,
                       colors: isRead
                           ? [
-                              dark
+                              widget.dark
                                   ? TColors.darkContainer
                                   : Colors.grey.shade100,
-                              dark
+                              widget.dark
                                   ? TColors.darkContainer
                                   : Colors.grey.shade50,
                             ]
@@ -151,7 +174,7 @@ class NotificationItem extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
+              child: Icon(
                     icon,
                     color: iconColor,
                     size: 28,
@@ -168,7 +191,7 @@ class NotificationItem extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              notification.title,
+                              widget.notification.title,
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
@@ -178,10 +201,10 @@ class NotificationItem extends StatelessWidget {
                                         : FontWeight.bold,
                                     fontSize: 16,
                                     color: isRead
-                                        ? (dark
+                                        ? (widget.dark
                                             ? Colors.grey.shade300
                                             : Colors.grey.shade700)
-                                        : (dark
+                                        : (widget.dark
                                             ? Colors.white
                                             : Colors.black87),
                                     height: 1.3,
@@ -215,9 +238,9 @@ class NotificationItem extends StatelessWidget {
                       const SizedBox(height: AppSizes.sm / 2),
                       // Message
                       Text(
-                        notification.message,
+                        widget.notification.message,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: dark
+                              color: widget.dark
                                   ? Colors.grey.shade400
                                   : Colors.grey.shade600,
                               fontSize: 14,
@@ -233,18 +256,18 @@ class NotificationItem extends StatelessWidget {
                           Icon(
                             Iconsax.clock,
                             size: 12,
-                            color: dark
+                            color: widget.dark
                                 ? Colors.grey.shade600
                                 : Colors.grey.shade500,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _getTimeAgo(notification.createdAt),
+                            _getTimeAgo(widget.notification.createdAt),
                             style: Theme.of(context)
                                 .textTheme
                                 .labelSmall
                                 ?.copyWith(
-                                  color: dark
+                                  color: widget.dark
                                       ? Colors.grey.shade600
                                       : Colors.grey.shade500,
                                   fontSize: 12,

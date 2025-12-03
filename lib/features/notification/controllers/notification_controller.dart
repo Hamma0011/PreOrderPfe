@@ -63,13 +63,10 @@ class NotificationController extends GetxController {
     try {
       final fetchedNotifications =
           await notificationRepository.fechUserNotifications();
+      fetchedNotifications.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       notifications.value = fetchedNotifications;
     } catch (e) {
-      Get.snackbar(
-        'Erreur',
-        'Impossible de charger les notifications',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      debugPrint('Erreur chargement notifications: $e');
     } finally {
       _isLoading.value = false;
     }

@@ -259,7 +259,6 @@ class OrderController extends GetxController {
         'read': false,
         'etablissement_id': order.etablissementId,
         'receiver_role': 'client',
-        'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
       debugPrint('Erreur notification: $e');
@@ -1235,7 +1234,6 @@ class OrderController extends GetxController {
         'read': false,
         'etablissement_id': etablissementId,
         'receiver_role': receiverRole,
-        'created_at': DateTime.now().toIso8601String(),
       });
       debugPrint('Notification envoyée à $receiverRole: $title');
     } catch (e) {
@@ -1302,9 +1300,12 @@ class OrderController extends GetxController {
       final totalItems =
           order.items.fold<int>(0, (sum, item) => sum + item.quantity);
 
-      // Créer le message de notification avec le nom de l'établissement
+      final orderCode = (order.codeRetrait != null && order.codeRetrait!.isNotEmpty)
+          ? order.codeRetrait!
+          : order.id.substring(0, 8).toUpperCase();
+
       String message =
-          'Nouvelle commande reçue pour $etablissementName : $totalItems article${totalItems > 1 ? 's' : ''} pour un montant total de ${order.totalAmount.toStringAsFixed(2)} DT';
+          'Nouvelle commande reçue code $orderCode : $totalItems article${totalItems > 1 ? 's' : ''} pour un montant total de ${order.totalAmount.toStringAsFixed(2)} DT';
 
       // Ajouter l'heure d'arrivée estimée si elle est disponible
       if (order.clientArrivalTime != null &&
@@ -1323,7 +1324,6 @@ class OrderController extends GetxController {
         'message': message,
         'read': false,
         'etablissement_id': etablissementId,
-        'created_at': DateTime.now().toIso8601String(),
       });
 
       debugPrint(' Notification envoyée au gérant $gerantId pour la commande');

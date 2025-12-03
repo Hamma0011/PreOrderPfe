@@ -601,9 +601,8 @@ class _GerantOrderManagementScreenState
       return const SizedBox.shrink();
     }
 
-    // Afficher les 2 premiers articles + compteur si plus
-    final displayItems = order.items.take(2).toList();
-    final remainingCount = order.items.length > 2 ? order.items.length - 2 : 0;
+    // Afficher tous les articles commandés
+    final displayItems = order.items;
 
     return Container(
       margin: const EdgeInsets.only(top: 6),
@@ -706,7 +705,7 @@ class _GerantOrderManagementScreenState
                           color: Colors.grey.shade800,
                         ),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                        maxLines: 2,
                       ),
                     ),
                     Text(
@@ -722,18 +721,7 @@ class _GerantOrderManagementScreenState
               );
             });
           }),
-          if (remainingCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                '+ $remainingCount autre${remainingCount > 1 ? 's' : ''} article${remainingCount > 1 ? 's' : ''}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
+          // Supprime l'info "+ X autres" pour afficher tous les articles
         ],
       ),
     );
